@@ -18,7 +18,6 @@ endif()
 
 add_subdirectory(aesm)
 add_subdirectory(mem)
-add_subdirectory(safecrt)
 add_subdirectory(safemath)
 add_subdirectory(str)
 
@@ -29,10 +28,7 @@ add_subdirectory(debug-mode)
 add_subdirectory(ecall)
 add_subdirectory(oeedger8r)
 add_subdirectory(props)
-endif()
-
-# Windows test Broken Post #632 issue
-if ( UNIX )
+add_subdirectory(safecrt)
 add_subdirectory(abortStatus)
 add_subdirectory(create-rapid)
 add_subdirectory(ecall_ocall)
