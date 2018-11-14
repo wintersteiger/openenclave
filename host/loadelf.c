@@ -196,8 +196,10 @@ static oe_result_t _oe_load_elf_image(
         }
 
         /* Fail if LO not found */
-        if (lo != 0)
+        if (lo != 0) {
+            printf("lo = 0x%lx\n", lo);
             OE_RAISE(OE_FAILURE);
+        }
 
         /* Fail if HI not found */
         if (hi == 0)

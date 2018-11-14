@@ -54,6 +54,12 @@ add_library(oelibcxx_cxx STATIC
     libcxx/src/vector.cpp
     )
 
+if (USE_CLANG)
+    message("Here!!!")
+    set(CMAKE_C_COMPILER enclave_cc)
+    set(CMAKE_CXX_COMPILER enclave_cxx)
+endif()
+
 target_compile_options(oelibcxx_cxx PRIVATE -std=c++14)
 target_compile_definitions(oelibcxx_cxx PRIVATE
     -DLIBCXXRT

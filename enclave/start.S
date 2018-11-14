@@ -35,6 +35,6 @@ _start:
 oe_call_link_enclave:
 .cfi_startproc
     call oe_link_enclave
-.cfi_endproc
+.cfi_endproc 
 
 .size oe_call_link_enclave, .-oe_call_link_enclave

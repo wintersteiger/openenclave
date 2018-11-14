@@ -1,7 +1,17 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
+if (USE_CLANG)
+    message("oecore: Using clang to cross compile to linux")
+    set(CMAKE_C_COMPILER enclave_cc)
+    set(CMAKE_LINKER enclave_ar)
+endif()
+
 if (UNIX)
+set(PLATFORM_SRC
+    linux/reloc.c
+    )
+elseif(WIN32 AND USE_CLANG)
 set(PLATFORM_SRC
     linux/reloc.c
     )
@@ -61,9 +71,22 @@ target_compile_options(oecore PUBLIC
     -nostdinc
     -fno-stack-protector
     -fvisibility=hidden
+    -mxsave
     )
 
 target_compile_options(oecore INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
+
+if (USE_CLANG)
+    message("Changing libray prefix and suffix to linux style")
+    set_target_properties(oecore PROPERTIES 
+        PREFIX "lib"
+        SUFFIX ".a"
+    ) 
+    # Treat .S files as C files to compile them
+    set_source_files_properties(enter.S PROPERTIES LANGUAGE C)
+    set_source_files_properties(exit.S PROPERTIES LANGUAGE C)
+    set_source_files_properties(getkey.S PROPERTIES LANGUAGE C)
+endif()
 
 if(USE_LIBSGX)
     target_compile_definitions(oecore PUBLIC OE_USE_LIBSGX)

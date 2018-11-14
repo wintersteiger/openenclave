@@ -18,8 +18,24 @@
 # - the resulting binary name is not reflected by the target
 #   (complicating install rules)
 #
+if (USE_CLANG)
+	message("Here-add_enclave_executable!!!")
+	set(CMAKE_C_COMPILER enclave_cc)
+	set(CMAKE_LINKER enclave_ld)
+	set(CMAKE_EXECUTABLE_SUFFIX ".so")
+endif()
+
+
 function(add_enclave_executable BIN SIGNCONF)
-	add_executable(${BIN} ${ARGN})
+	if (USE_CLANG)
+		add_library(${BIN} STATIC)
+		set_target_properties(${BIN} PROPERTIES 
+			SUFFIX ".so"
+		) 	
+		message("Foooo1")	
+	else()
+		add_executable(${BIN} ${ARGN})
+	endif()
 
 	# custom rule to generate signing key
 	add_custom_command(OUTPUT ${BIN}-private.pem
@@ -37,4 +53,11 @@ function(add_enclave_executable BIN SIGNCONF)
 	add_custom_target(${BIN}-signed ALL
 		DEPENDS ${BIN}.signed.so
 		)
+
+
+
 endfunction(add_enclave_executable)
+
+
+
+

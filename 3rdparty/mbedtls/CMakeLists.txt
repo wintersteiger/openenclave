@@ -2,8 +2,17 @@
 # Licensed under the MIT License.
 
 # Copy mbedtls sources to replace config.h and build w/ own flags
+if (USE_CLANG)
+    message("3rdparty/mbedtls: Using clang to cross compile to linux")
+    set(CMAKE_C_COMPILER enclave_cc)
+    set(CMAKE_LINKER enclave_ar)
+endif()
 
-set(MBEDTLS_WRAP_CFLAGS "-nostdinc -I${OE_INCDIR}/openenclave/libc -fPIC -fno-builtin-udivti3 ${SPECTRE_MITIGATION_FLAGS}")
+if (USE_CLANG)
+    set(MBEDTLS_WRAP_CFLAGS "-nostdinc -I${OE_INCDIR}/openenclave/libc -fPIC -fno-builtin-udivti3 ${SPECTRE_MITIGATION_FLAGS} -target x86_64-pc-linux ")
+else()
+    set(MBEDTLS_WRAP_CFLAGS "-nostdinc -I${OE_INCDIR}/openenclave/libc -fPIC -fno-builtin-udivti3 ${SPECTRE_MITIGATION_FLAGS}")
+endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
 
@@ -24,7 +33,7 @@ ExternalProject_Add(mbedtls-wrap
         ${CMAKE_BINARY_DIR}/3rdparty/mbedtls/config_final.h <SOURCE_DIR>/include/mbedtls/config.h
     # Addl args for compiler
     CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/toolchain.cmake
         -DCMAKE_C_FLAGS=${MBEDTLS_WRAP_CFLAGS}
         -DENABLE_PROGRAMS=OFF
         -DENABLE_TESTING=OFF
@@ -52,6 +61,15 @@ target_link_libraries(mbedcrypto INTERFACE
     ${OE_LIBDIR}/openenclave/enclave/libmbedx509.a
     ${OE_LIBDIR}/openenclave/enclave/libmbedcrypto.a
 )
+
+#if (USE_CLANG)
+#    message("Changing libray prefix and suffix to linux style")
+#    set_target_properties(oecore PROPERTIES 
+#        PREFIX "lib"
+#        SUFFIX ".a"
+#    ) 
+#endif()
+
 # For the libc dependency, We would just want to use "oelibc". However, we need
 # an actual lib-dependency between crypto an libc, which is not expressable
 # with CMake. If using the target "oelibc", CMake reorders the libs, resulting

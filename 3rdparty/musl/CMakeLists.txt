@@ -4,7 +4,7 @@
 # Copy MUSL headers to collector dir and wrap
 # actual compilation and lib-generation happens in <ROOT>/libc/
 
-set(CFLAGS "-fPIC -DSYSCALL_NO_INLINE")
+set(CFLAGS "-fPIC -DSYSCALL_NO_INLINE -target x86_64-pc-linux")
 set(PATCHES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/patches)
 set(MUSL_DIR ${CMAKE_CURRENT_BINARY_DIR}/musl)
 
@@ -26,14 +26,40 @@ ExternalProject_Add(oelibc_includes
             ${MUSL_DIR}/arch/x86_64/pthread_arch.h
     CONFIGURE_COMMAND
         ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR}/musl
-        ./configure
+        bash -x ./configure
             --includedir=${OE_INCDIR}/openenclave/libc
             CFLAGS=${CFLAGS}
-            CC=${CMAKE_C_COMPILER}
-            CXX=${CMAKE_CXX_COMPILER}
+            CC=clang
+            CXX=clang++
     BUILD_COMMAND
-        ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR}/musl
-        make install-headers
+        #${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR}/musl
+        #nmake install-headers
+
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_BINARY_DIR}/musl/include
+            ${OE_INCDIR}/openenclave/libc
+
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_BINARY_DIR}/musl/arch/generic/bits
+            ${OE_INCDIR}/openenclave/libc/bits
+
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_BINARY_DIR}/musl/arch/x86_64/bits
+            ${OE_INCDIR}/openenclave/libc/bits 
+
+        COMMAND sed -f ${CMAKE_CURRENT_BINARY_DIR}/musl/tools/mkalltypes.sed 
+            ${CMAKE_CURRENT_BINARY_DIR}/musl/arch/x86_64/bits/alltypes.h.in 
+            ${CMAKE_CURRENT_BINARY_DIR}/musl/include/alltypes.h.in > 
+            ${OE_INCDIR}//openenclave/libc/bits/alltypes.h
+        
+        COMMAND ${CMAKE_COMMAND} -E copy 
+            ${CMAKE_CURRENT_BINARY_DIR}/musl/arch/x86_64/bits/syscall.h.in
+            ${OE_INCDIR}/openenclave/libc/bits/syscall.h
+
+        COMMAND sed -n -e s/__NR_/SYS_/p
+            < ${CMAKE_CURRENT_BINARY_DIR}/musl/arch/x86_64/bits/syscall.h.in
+            >> ${OE_INCDIR}/openenclave/libc/bits/syscall.h
+
         COMMAND ${CMAKE_COMMAND} -E copy
             ${OE_INCDIR}/openenclave/libc/endian.h
             ${OE_INCDIR}/openenclave/libc/__endian.h
@@ -42,8 +68,8 @@ ExternalProject_Add(oelibc_includes
             ${OE_INCDIR}/openenclave/libc/endian.h
 
         # Append deprecations.h to all C header files.
-        COMMAND ${CMAKE_CURRENT_LIST_DIR}/append-deprecations
-            ${OE_INCDIR}/openenclave/libc
+        # COMMAND ${CMAKE_CURRENT_LIST_DIR}/append-deprecations
+        #    ${OE_INCDIR}/openenclave/libc
 
         # Copy local deprecations.h to include/bits/deprecated.h.
         COMMAND ${CMAKE_COMMAND} -E copy
