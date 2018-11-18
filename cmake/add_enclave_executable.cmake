@@ -21,19 +21,21 @@
 if (USE_CLANG)
 	message("Here-add_enclave_executable!!!")
 	
-	# Setup compiler
-	set(CMAKE_C_COMPILER enclave_cc)
-	set(CMAKE_CXX_COMPILER enclave_cxx)
-	#set(_PLATFORM_DEFINES "")
-	#set(CMAKE_C_COMPILE_OBJECT
-	#	"clang -target x86_64-pc-linux <DEFINES> <INCLUDES> <FLAGS> ")
+	# Setup compilers
+	set(CMAKE_C_COMPILE_OBJECT
+		"clang -target x86_64-pc-linux <DEFINES> <INCLUDES> -g -fPIE -DOE_BUILD_ENCLAVE -o <OBJECT> -c <SOURCE>")
 	
+	set(CMAKE_CXX_COMPILE_OBJECT
+		"clang -target x86_64-pc-linux <DEFINES> <INCLUDES> -g -fPIE -DOE_BUILD_ENCLAVE -o <OBJECT> -c <SOURCE>")
 
 	# Setup linker
 	find_program(LD_LLD "ld.lld.exe")
 	set(CMAKE_EXECUTABLE_SUFFIX ".so")
 	set(CMAKE_C_STANDARD_LIBRARIES "")
 	set(CMAKE_C_LINK_EXECUTABLE
+    	"clang -target x86_64-pc-linux <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> -fuse-ld=\"${LD_LLD}\"")
+	set(CMAKE_CXX_STANDARD_LIBRARIES "")		
+	set(CMAKE_CXX_LINK_EXECUTABLE
     	"clang -target x86_64-pc-linux <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> -fuse-ld=\"${LD_LLD}\"")
 endif()
 

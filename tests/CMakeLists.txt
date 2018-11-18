@@ -22,6 +22,8 @@ add_subdirectory(safecrt)
 add_subdirectory(safemath)
 add_subdirectory(str)
 add_subdirectory(echo)
+add_subdirectory(pingpong)
+add_subdirectory(ecall)
 
 if (UNIX OR ADD_WINDOWS_ENCLAVE_TESTS)
 add_subdirectory(bigmalloc)
