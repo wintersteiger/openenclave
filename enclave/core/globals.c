@@ -8,6 +8,29 @@
 
 extern volatile const oe_sgx_enclave_properties_t oe_enclave_properties_sgx;
 
+//
+// Declare an invalid oeinfo to ensure .oeinfo section exists
+// - This object won't be linked if enclave has the macro defined.
+// - If enclave does't have the macro defined, it must go through
+//   oesign to update the stucture, which would override the value.
+//
+
+// OE_SET_ENCLAVE_SGX(
+//     OE_UINT16_MAX,
+//     OE_UINT16_MAX,
+//     false,
+//     OE_UINT16_MAX,
+//     OE_UINT16_MAX,
+//     OE_UINT16_MAX);
+
+OE_SET_ENCLAVE_SGX(
+    1,    /* ProductID */
+    1,    /* SecurityVersion */
+    true, /* AllowDebug */
+    1024, /* HeapPageCount */
+    1024, /* StackPageCount */
+    2);   /* TCSCount */    
+
 /*
 **==============================================================================
 **

@@ -20,9 +20,21 @@
 #
 if (USE_CLANG)
 	message("Here-add_enclave_executable!!!")
+	
+	# Setup compiler
 	set(CMAKE_C_COMPILER enclave_cc)
-	set(CMAKE_LINKER enclave_ld)
+	set(CMAKE_CXX_COMPILER enclave_cxx)
+	#set(_PLATFORM_DEFINES "")
+	#set(CMAKE_C_COMPILE_OBJECT
+	#	"clang -target x86_64-pc-linux <DEFINES> <INCLUDES> <FLAGS> ")
+	
+
+	# Setup linker
+	find_program(LD_LLD "ld.lld.exe")
 	set(CMAKE_EXECUTABLE_SUFFIX ".so")
+	set(CMAKE_C_STANDARD_LIBRARIES "")
+	set(CMAKE_C_LINK_EXECUTABLE
+    	"clang -target x86_64-pc-linux <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> -fuse-ld=\"${LD_LLD}\"")
 endif()
 
 
@@ -32,6 +44,7 @@ function(add_enclave_executable BIN SIGNCONF)
 		set_target_properties(${BIN} PROPERTIES 
 			SUFFIX ".so"
 		) 	
+		set(CMAKE_C_STANDARD_LIBRARIES_INIT "")
 		message("Foooo1")	
 	else()
 		add_executable(${BIN} ${ARGN})

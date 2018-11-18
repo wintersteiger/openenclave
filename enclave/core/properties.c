@@ -32,10 +32,10 @@ OE_CHECK_SIZE(sizeof(oe_sgx_enclave_properties_t), 1928);
 //   oesign to update the stucture, which would override the value.
 //
 
-OE_SET_ENCLAVE_SGX(
-    OE_UINT16_MAX,
-    OE_UINT16_MAX,
-    false,
-    OE_UINT16_MAX,
-    OE_UINT16_MAX,
-    OE_UINT16_MAX);
+// OE_SET_ENCLAVE_SGX(
+//     OE_UINT16_MAX,
+//     OE_UINT16_MAX,
+//     false,
+//     OE_UINT16_MAX,
+//     OE_UINT16_MAX,
+//     OE_UINT16_MAX);
