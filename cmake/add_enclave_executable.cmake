@@ -18,40 +18,9 @@
 # - the resulting binary name is not reflected by the target
 #   (complicating install rules)
 #
-if (USE_CLANG)
-	message("Here-add_enclave_executable!!!")
-	
-	# Setup compilers
-	set(CMAKE_C_COMPILE_OBJECT
-		"clang -target x86_64-pc-linux <DEFINES> <INCLUDES> -g -fPIE -DOE_BUILD_ENCLAVE -o <OBJECT> -c <SOURCE>")
-	
-	set(CMAKE_CXX_COMPILE_OBJECT
-		"clang -target x86_64-pc-linux <DEFINES> <INCLUDES> -g -fPIE -DOE_BUILD_ENCLAVE -o <OBJECT> -c <SOURCE>")
-
-	# Setup linker
-	find_program(LD_LLD "ld.lld.exe")
-	set(CMAKE_EXECUTABLE_SUFFIX ".so")
-	set(CMAKE_C_STANDARD_LIBRARIES "")
-	set(CMAKE_C_LINK_EXECUTABLE
-    	"clang -target x86_64-pc-linux <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> -fuse-ld=\"${LD_LLD}\"")
-	set(CMAKE_CXX_STANDARD_LIBRARIES "")		
-	set(CMAKE_CXX_LINK_EXECUTABLE
-    	"clang -target x86_64-pc-linux <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> -fuse-ld=\"${LD_LLD}\"")
-endif()
-
-
 function(add_enclave_executable BIN SIGNCONF)
-	if (USE_CLANG)
-		add_library(${BIN} STATIC)
-		set_target_properties(${BIN} PROPERTIES 
-			SUFFIX ".so"
-		) 	
-		set(CMAKE_C_STANDARD_LIBRARIES_INIT "")
-		message("Foooo1")	
-	else()
-		add_executable(${BIN} ${ARGN})
-	endif()
-
+	add_executable(${BIN} ${ARGN})
+	
 	# custom rule to generate signing key
 	add_custom_command(OUTPUT ${BIN}-private.pem
 		COMMAND openssl genrsa -out ${BIN}-private.pem -3 3072
@@ -68,11 +37,10 @@ function(add_enclave_executable BIN SIGNCONF)
 	add_custom_target(${BIN}-signed ALL
 		DEPENDS ${BIN}.signed.so
 		)
-
-
-
 endfunction(add_enclave_executable)
 
-
-
-
+if (USE_CLANG)
+	add_custom_target(unused)
+    include(make_portable)
+    make_portable(unused)
+endif()

@@ -113,11 +113,11 @@ int main(int argc, char** argv)
     {
         std::string cmd = file_to_string(argv[1]+1);
         printf("invocation: oecc %s\n", cmd.c_str());
-        auto tcmd = "clang -target x86_64-pc-linux -nostdinc -nodefaultlibs -fPIE -I../../include -g " + transform_arguments(cmd);
+        auto tcmd = "clang -target x86_64-pc-linux -nostdinc -nodefaultlibs -fPIC -I../../include -g " + transform_arguments(cmd);
         printf("invocation-rewritten: %s\n", tcmd.c_str());
         return system(tcmd.c_str());
     } else {
-        std::string tcmd = "clang -target x86_64-pc-linux -nostdinc -nodefaultlibs -fPIE -g ";
+        std::string tcmd = "clang -target x86_64-pc-linux -nostdinc -nodefaultlibs -fPIC -g ";
         for (int i=1; i < argc; ++i) {
             tcmd += argv[i];
             tcmd += " ";

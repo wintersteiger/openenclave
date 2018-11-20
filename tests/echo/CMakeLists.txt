@@ -5,7 +5,7 @@ add_subdirectory(host)
 
 if (UNIX)
 	add_subdirectory(enc)
-elseif(WIN32 AND USE_CLANG)	
+elseif(WIN32 AND USE_PORTABLE_ENCLAVES)	
 	add_subdirectory(enc)
 endif()
 

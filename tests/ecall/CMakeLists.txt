@@ -3,7 +3,7 @@
 
 add_subdirectory(host)
 
-if (UNIX OR (WIN32 AND USE_CLANG))
+if (UNIX OR (WIN32 AND USE_PORTABLE_ENCLAVES))
 	add_subdirectory(enc)
 endif()
 

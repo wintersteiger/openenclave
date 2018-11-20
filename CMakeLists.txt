@@ -85,6 +85,7 @@ enable_testing()
 include(add_enclave_test)
 
 
+
 # Recurse through subdirectories
 add_subdirectory(host)
 add_subdirectory(include)
@@ -101,8 +102,8 @@ if (UNIX)
   add_subdirectory(libcxx)
   add_subdirectory(pkgconfig)
   add_subdirectory(samples)
-elseif(WIN32 AND USE_CLANG)
-  message("Here!!!")
+elseif(WIN32 AND USE_PORTABLE_ENCLAVES)
+  add_subdirectory(build_tools)
   add_subdirectory(3rdparty)
   add_subdirectory(libc)
   add_subdirectory(libcxx)

@@ -1,17 +1,12 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-if (USE_CLANG)
-    message("oecore: Using clang to cross compile to linux")
-    set(CMAKE_C_COMPILER enclave_cc)
-    set(CMAKE_LINKER enclave_ar)
-endif()
 
 if (UNIX)
 set(PLATFORM_SRC
     linux/reloc.c
     )
-elseif(WIN32 AND USE_CLANG)
+elseif(WIN32 AND USE_PORTABLE_ENCLAVES)
 set(PLATFORM_SRC
     linux/reloc.c
     )
@@ -76,17 +71,6 @@ target_compile_options(oecore PUBLIC
 
 target_compile_options(oecore INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
 
-if (USE_CLANG)
-    message("Changing libray prefix and suffix to linux style")
-    set_target_properties(oecore PROPERTIES 
-        PREFIX "lib"
-        SUFFIX ".a"
-    ) 
-    # Treat .S files as C files to compile them
-    set_source_files_properties(enter.S PROPERTIES LANGUAGE C)
-    set_source_files_properties(exit.S PROPERTIES LANGUAGE C)
-    set_source_files_properties(getkey.S PROPERTIES LANGUAGE C)
-endif()
 
 if(USE_LIBSGX)
     target_compile_definitions(oecore PUBLIC OE_USE_LIBSGX)
@@ -113,3 +97,13 @@ set_source_files_properties(jump.c PROPERTIES COMPILE_FLAGS -O2)
 
 set_property(TARGET oecore PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 install (TARGETS oecore EXPORT openenclave-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    # Treat .S files as C files to compile them
+    set_source_files_properties(enter.S PROPERTIES LANGUAGE C)
+    set_source_files_properties(exit.S PROPERTIES LANGUAGE C)
+    set_source_files_properties(getkey.S PROPERTIES LANGUAGE C)
+    
+    include(make_portable)
+    make_portable(oecore)
+endif()

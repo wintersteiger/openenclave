@@ -54,8 +54,7 @@ add_library(oelibcxx_cxx STATIC
     libcxx/src/vector.cpp
     )
 
-if (USE_CLANG)
-    message("Here!!!")
+if (USE_PORTABLE_ENCLAVES)
     set(CMAKE_C_COMPILER enclave_cc)
     set(CMAKE_CXX_COMPILER enclave_cxx)
 endif()

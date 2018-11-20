@@ -13,3 +13,8 @@ add_executable(pingpong_enc
 
 target_include_directories(pingpong_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(pingpong_enc oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(pingpong_enc)
+endif()

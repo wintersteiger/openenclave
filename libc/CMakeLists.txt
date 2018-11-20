@@ -6,12 +6,6 @@
 # TODO: Fix this build so `-D` flags etc. are not used when assembling
 # `.S` sources. See #760.
 
-if (USE_CLANG)
-    message("oelibc: Using clang to cross compile to linux")
-    set(CMAKE_C_COMPILER enclave_cc)
-    set(CMAKE_LINKER enclave_ar)
-endif()
-
 set(MUSLSRC ${PROJECT_SOURCE_DIR}/3rdparty/musl/musl/src)
 
 add_library(oelibc STATIC
@@ -656,29 +650,6 @@ add_library(oelibc STATIC
 
 set_property(TARGET oelibc PROPERTY C_STANDARD 99)
 
-if (USE_CLANG)
-  set_target_properties(oelibc PROPERTIES 
-    PREFIX "lib"
-    SUFFIX ".a"
-  )
-
-  # Treat .S files as C files to compile them
-  set_source_files_properties(abort.S PROPERTIES LANGUAGE C)  
-  set_source_files_properties(exp2l.S PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/math/x86_64/acosl.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/math/x86_64/asinl.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/math/x86_64/log1pl.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/math/x86_64/log2l.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/math/x86_64/logl.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/math/x86_64/exp2l.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/math/x86_64/sqrt.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/math/x86_64/sqrtl.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/math/x86_64/sqrtf.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/fenv/x86_64/fenv.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/setjmp/x86_64/longjmp.s PROPERTIES LANGUAGE C)  
-  set_source_files_properties(${MUSLSRC}/setjmp/x86_64/setjmp.s PROPERTIES LANGUAGE C)  
-endif()
-
 target_compile_options(oelibc PRIVATE
     -fno-builtin-memcpy
     -fno-builtin-memset
@@ -708,7 +679,7 @@ if (CMAKE_C_COMPILER_ID MATCHES GNU)
     -Wno-unused-function
     -Wno-unused-value
     -Wno-unused-variable)
-elseif (CMAKE_C_COMPILER_ID MATCHES Clang)
+elseif (CMAKE_C_COMPILER_ID MATCHES Clang OR USE_PORTABLE_ENCLAVES)
   target_compile_options(oelibc PRIVATE
     -Wno-dangling-else
     -Wno-ignored-attributes
@@ -719,14 +690,6 @@ elseif (CMAKE_C_COMPILER_ID MATCHES Clang)
 endif ()
 
 target_compile_definitions(oelibc PRIVATE _XOPEN_SOURCE=700)
-
-if (USE_CLANG)
-    message("Changing libray prefix and suffix to linux style")
-    set_target_properties(oelibc PROPERTIES 
-        PREFIX "lib"
-        SUFFIX ".a"
-    ) 
-endif()
 
 if (USE_DEBUG_MALLOC)
   target_compile_definitions(oelibc PRIVATE OE_USE_DEBUG_MALLOC)
@@ -763,3 +726,24 @@ set_property(TARGET oelibc PROPERTY
 # Install lib-archive upon install-time.
 install(TARGETS oelibc EXPORT openenclave-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  # Treat .S files as C files to compile them
+  set_source_files_properties(abort.S PROPERTIES LANGUAGE C)  
+  set_source_files_properties(exp2l.S PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/math/x86_64/acosl.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/math/x86_64/asinl.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/math/x86_64/log1pl.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/math/x86_64/log2l.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/math/x86_64/logl.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/math/x86_64/exp2l.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/math/x86_64/sqrt.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/math/x86_64/sqrtl.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/math/x86_64/sqrtf.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/fenv/x86_64/fenv.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/setjmp/x86_64/longjmp.s PROPERTIES LANGUAGE C)  
+  set_source_files_properties(${MUSLSRC}/setjmp/x86_64/setjmp.s PROPERTIES LANGUAGE C)  
+
+  include (make_portable)
+  make_portable(oelibc)
+endif()

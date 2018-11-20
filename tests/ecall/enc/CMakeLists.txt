@@ -4,3 +4,8 @@
 include(add_enclave_executable)
 add_executable(ecall_enc enc.cpp)
 target_link_libraries(ecall_enc oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(ecall_enc)
+endif()

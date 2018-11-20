@@ -2,16 +2,13 @@
 # Licensed under the MIT License.
 
 # Copy mbedtls sources to replace config.h and build w/ own flags
-if (USE_CLANG)
-    message("3rdparty/mbedtls: Using clang to cross compile to linux")
-    set(CMAKE_C_COMPILER enclave_cc)
-    set(CMAKE_LINKER enclave_ar)
-endif()
 
-if (USE_CLANG)
-    set(MBEDTLS_WRAP_CFLAGS "-nostdinc -I${OE_INCDIR}/openenclave/libc -fPIC -fno-builtin-udivti3 ${SPECTRE_MITIGATION_FLAGS} -target x86_64-pc-linux ")
-else()
-    set(MBEDTLS_WRAP_CFLAGS "-nostdinc -I${OE_INCDIR}/openenclave/libc -fPIC -fno-builtin-udivti3 ${SPECTRE_MITIGATION_FLAGS}")
+
+set(MBEDTLS_WRAP_CFLAGS "-nostdinc -I${OE_INCDIR}/openenclave/libc -fPIC -fno-builtin-udivti3 ${SPECTRE_MITIGATION_FLAGS}")
+
+if (USE_PORTABLE_ENCLAVES)
+    set(MBEDTLS_WRAP_CFLAGS "-target x86_64-pc-linux ${MBEDTLS_WRAP_CFLAGS}")
+    find_program(LLVM_AR "llvm-ar.exe")
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
@@ -35,6 +32,7 @@ ExternalProject_Add(mbedtls-wrap
     CMAKE_ARGS
         -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/toolchain.cmake
         -DCMAKE_C_FLAGS=${MBEDTLS_WRAP_CFLAGS}
+        -DCMAKE_AR=${LLVM_AR}
         -DENABLE_PROGRAMS=OFF
         -DENABLE_TESTING=OFF
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -61,14 +59,6 @@ target_link_libraries(mbedcrypto INTERFACE
     ${OE_LIBDIR}/openenclave/enclave/libmbedx509.a
     ${OE_LIBDIR}/openenclave/enclave/libmbedcrypto.a
 )
-
-#if (USE_CLANG)
-#    message("Changing libray prefix and suffix to linux style")
-#    set_target_properties(oecore PROPERTIES 
-#        PREFIX "lib"
-#        SUFFIX ".a"
-#    ) 
-#endif()
 
 # For the libc dependency, We would just want to use "oelibc". However, we need
 # an actual lib-dependency between crypto an libc, which is not expressable
