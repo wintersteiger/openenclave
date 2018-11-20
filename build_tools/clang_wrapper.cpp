@@ -15,10 +15,15 @@ struct option_map {
     {"/W3", NULL},
     {"/GR", NULL},
     {"/EHsc", NULL},
+    {"/MD", NULL},
     {"/MDd", NULL},
+    {"/DNDEBUG", "-DNDEBUG"},
     {"/Zi", "-g"},
     {"/Ob0", NULL},
+    {"/Ob1", NULL},
+    {"/Ob2", NULL},
     {"/Od", NULL},
+    {"/O2", "-O2"},
     {"/RTC1", NULL},
     {"/FS", NULL}
 };
@@ -26,14 +31,15 @@ struct option_map {
 const size_t g_table_size = sizeof(g_table)/sizeof(g_table[0]);
 int main(int argc, char** argv)
 {
-    printf("original-call: %s", argv[0]);
+    /*printf("original-call: %s", argv[0]);
     for (int i=0; i < argc; ++i) {
         printf("%s ", argv[i]);
     }
-    printf("\n");
+    printf("\n");*/
    
 
     std::string cmd = "clang";
+    bool debug = false;
     for (int i=1; i < argc; ++i)
     {
         std::string a = argv[i];
@@ -43,8 +49,13 @@ int main(int argc, char** argv)
                 match = true;
                 if (g_table[j].to) {
                     cmd += " ";
-                    cmd += g_table[j].to;
+                    if (a == "/O2" && debug)
+                        cmd += "-Og";
+                    else
+                        cmd += g_table[j].to;
                 } 
+                if (a == "/Zi")
+                    debug = true;
             }
         }
         if (!match)
@@ -53,6 +64,6 @@ int main(int argc, char** argv)
         }
     }
 
-    printf("transformed-call: %s\n", cmd.c_str());
+    //printf("transformed-call: %s\n", cmd.c_str());
     return system(cmd.c_str());
 }
