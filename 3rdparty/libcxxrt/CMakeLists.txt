@@ -14,3 +14,8 @@ target_compile_options(cxxrt-static PRIVATE
     -I${OE_INCDIR}/openenclave/libc
     )
 add_dependencies(cxxrt-static oelibc_includes)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(cxxrt-static)
+endif()

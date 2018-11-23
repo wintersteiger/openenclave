@@ -9,17 +9,27 @@
 # place/install all three libs (cxx, rt, unwind) and link against all
 # three.
 
+if (USE_PORTABLE_ENCLAVES)
+    set(AR "llvm-ar")
+    set(OBJ_FILES "@files.txt")
+else()
+    set(AR "ar")
+    set(OBJ_FILES "*.o")
+endif()
+
 # Use intermediate project and add properties later using an interface library
 include (ExternalProject)
 ExternalProject_Add(oelibcxx_tmp
-    DEPENDS cxxrt-static oelibcxx_unwind oelibcxx_cxx
+    #DEPENDS cxxrt-static oelibcxx_unwind oelibcxx_cxx
+    DEPENDS cxxrt-static oelibcxx_cxx
     DOWNLOAD_COMMAND ""
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND sh -c "rm -f *.o ${OE_LIBDIR}/enclave/liboelibcxx.a"
-            COMMAND ar x $<TARGET_FILE:cxxrt-static>
-            COMMAND ar x ${PROJECT_BINARY_DIR}/3rdparty/libunwind/libunwind/src/.libs/libunwind.a
-            COMMAND ar x $<TARGET_FILE:oelibcxx_cxx>
-            COMMAND sh -c "ar qs ${OE_LIBDIR}/openenclave/enclave/liboelibcxx.a *.o"
+        BUILD_COMMAND sh -c "rm -f *.o ${OE_LIBDIR}/enclave/liboelibcxx.a files.txt"
+            COMMAND ${AR} x $<TARGET_FILE:cxxrt-static>
+            #COMMAND ${AR} x ${PROJECT_BINARY_DIR}/3rdparty/libunwind/libunwind/src/.libs/libunwind.a
+            COMMAND ${AR} x $<TARGET_FILE:oelibcxx_cxx>
+            COMMAND sh -c "ls *.o* > files.txt"
+            COMMAND sh -c "${AR} qs ${OE_LIBDIR}/openenclave/enclave/liboelibcxx.a ${OBJ_FILES}"
         INSTALL_COMMAND ""
         )
 

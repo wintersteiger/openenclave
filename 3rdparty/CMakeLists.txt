@@ -5,6 +5,8 @@
 
 add_subdirectory(libcxx)
 add_subdirectory(libcxxrt)
-add_subdirectory(libunwind)
+if (UNIX)
+    add_subdirectory(libunwind)
+endif()
 add_subdirectory(musl)
 add_subdirectory(mbedtls) # after musl

@@ -38,3 +38,8 @@ set_property(
 )
 
 target_link_libraries(edl_enc oelibcxx oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(edl_enc)
+endif()

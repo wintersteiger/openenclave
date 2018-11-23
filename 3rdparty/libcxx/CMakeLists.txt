@@ -54,11 +54,6 @@ add_library(oelibcxx_cxx STATIC
     libcxx/src/vector.cpp
     )
 
-if (USE_PORTABLE_ENCLAVES)
-    set(CMAKE_C_COMPILER enclave_cc)
-    set(CMAKE_CXX_COMPILER enclave_cxx)
-endif()
-
 target_compile_options(oelibcxx_cxx PRIVATE -std=c++14)
 target_compile_definitions(oelibcxx_cxx PRIVATE
     -DLIBCXXRT
@@ -88,3 +83,8 @@ target_include_directories(oelibcxx_cxx PRIVATE ${CMAKE_SOURCE_DIR}/3rdparty/lib
 
 # install target just to propagate include-location, but not the archive iself
 install(TARGETS oelibcxx_cxx EXPORT openenclave-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(oelibcxx_cxx)
+endif()
