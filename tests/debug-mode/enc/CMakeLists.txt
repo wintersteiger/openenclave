@@ -13,3 +13,9 @@ add_enclave_executable(debug_enc sign-debug.conf
 
 target_link_libraries(no_debug_enc oeenclave)
 target_link_libraries(debug_enc oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(no_debug_enc)
+    make_portable(debug_enc)
+endif()

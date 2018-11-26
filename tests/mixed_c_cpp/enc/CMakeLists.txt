@@ -13,3 +13,9 @@ add_executable(mixed_c_cpp_enc
 
 target_include_directories(mixed_c_cpp_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(mixed_c_cpp_enc oelibcxx oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(mixed_c_cpp_enc)
+endif()
+

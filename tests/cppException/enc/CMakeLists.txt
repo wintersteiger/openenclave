@@ -14,3 +14,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
 endif ()
 
 target_link_libraries(cppException_enc oelibcxx oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  include(make_portable)
+  make_portable(cppException_enc)
+endif()

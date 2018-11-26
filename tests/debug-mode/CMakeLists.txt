@@ -3,7 +3,7 @@
 
 add_subdirectory(host)
 
-if (UNIX)
+if (UNIX OR USE_PORTABLE_ENCLAVES)
 	add_subdirectory(enc)
 
 	add_enclave_test(tests/debug-unsigned ./host debug_host ./enc debug_enc debug unsigned)

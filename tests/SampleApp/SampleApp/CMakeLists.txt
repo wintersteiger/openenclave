@@ -4,3 +4,8 @@
 include(add_enclave_executable)
 add_executable(SampleApp CallWrappers.cpp SampleApp.cpp)
 target_link_libraries(SampleApp oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(SampleApp)
+endif()

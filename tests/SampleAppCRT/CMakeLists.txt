@@ -3,8 +3,9 @@
 
 add_subdirectory(SampleAppCRTHost)
 
-if (UNIX)
+if (UNIX OR USE_PORTABLE_ENCLAVES)
 	add_subdirectory(SampleAppCRT)
 endif()
 
 add_enclave_test(tests/SampleAppCRT ./SampleAppCRTHost SampleAppCRTHost ./SampleAppCRT SampleAppCRT)
+

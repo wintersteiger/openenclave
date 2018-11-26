@@ -3,7 +3,7 @@
 
 add_subdirectory(host)
 
-if (UNIX)
+if (UNIX OR USE_PORTABLE_ENCLAVE)
 	add_subdirectory(enc)
 endif()
 

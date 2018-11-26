@@ -6,7 +6,7 @@
 #include <openenclave/internal/error.h>
 #include <openenclave/internal/tests.h>
 #include <sys/types.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -101,7 +101,7 @@ int main(int argc, const char* argv[])
              0,
              &enclave)) != OE_OK)
         oe_put_err("oe_create_enclave(): result=%u", result);
-    uint32_t pid = getpid();
+    uint32_t pid = 8888; // getpid();
 
     // Invoke "Test()" in the enclave.
     Test(enclave, pid);

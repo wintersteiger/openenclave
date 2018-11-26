@@ -9,7 +9,7 @@ file(STRINGS "tests.supported" alltests)
 
 add_subdirectory(host)
 
-if (UNIX)
+if (UNIX OR USE_PORTABLE_ENCLAVES)
 	add_subdirectory(enc)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} build_type)

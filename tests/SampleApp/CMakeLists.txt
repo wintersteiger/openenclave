@@ -3,7 +3,7 @@
 
 add_subdirectory(SampleAppHost)
 
-if (UNIX)
+if (UNIX OR USE_PORTABLE_ENCLAVES)
 	add_subdirectory(SampleApp)
 endif()
 

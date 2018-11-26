@@ -29,6 +29,30 @@ struct option_map {
 };
 
 const size_t g_table_size = sizeof(g_table)/sizeof(g_table[0]);
+
+std::string requote_defines(const std::string& s)
+{
+    if (s.size() > 2 && s[0] == '-' && s[1] == 'D') {
+        size_t i = 2;
+        while(i < s.size() && s[i] != '=')
+            ++i;
+        if (i >= s.size())
+            return s;
+        ++i;
+        std::string qs = s.substr(0, i);
+        while (i < s.size())
+        {
+            if (s[i] == '"') {
+                qs.push_back('\\');
+            }
+            qs.push_back(s[i]);
+            ++i;
+        }
+        return qs;
+    }
+    return s;
+}
+
 int main(int argc, char** argv)
 {
     /*printf("original-call: %s", argv[0]);
@@ -60,7 +84,7 @@ int main(int argc, char** argv)
         }
         if (!match)
         {
-            cmd += " " + a;
+            cmd += " " + requote_defines(a);
         }
     }
 

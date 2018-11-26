@@ -13,7 +13,7 @@ endif()
 
 add_subdirectory(host)
 
-if (UNIX)
+if (UNIX OR USE_PORTABLE_ENCLAVES)
 	add_subdirectory(enc)
 endif()
 

@@ -11,3 +11,8 @@ add_executable(enclaveparam_enc enc.c ${gen})
 target_include_directories(enclaveparam_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(enclaveparam_enc oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(enclaveparam_enc)
+endif()

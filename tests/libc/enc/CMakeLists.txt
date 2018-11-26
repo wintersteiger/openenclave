@@ -20,6 +20,11 @@ target_compile_options(libctest-support PRIVATE
     )
 target_link_libraries(libctest-support PUBLIC oelibc oeenclave oecore)
 
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(libctest-support)
+endif()
+
 function(add_libc_test_enc NAME CFILE)
     add_executable(libctest-${NAME}_enc enc.c main.c)
 
@@ -32,6 +37,10 @@ function(add_libc_test_enc NAME CFILE)
         )
     target_compile_definitions(libctest-${NAME}_enc PRIVATE -D__TEST__="${CFILE}")
     target_link_libraries(libctest-${NAME}_enc libctest-support)
+
+    if (USE_PORTABLE_ENCLAVES)
+        make_portable(libctest-${NAME}_enc)
+    endif()    
 endfunction(add_libc_test_enc)
 
 if (ENABLE_FULL_LIBC_TESTS)
@@ -39,6 +48,7 @@ if (ENABLE_FULL_LIBC_TESTS)
 else()
     file(STRINGS "../tests.supported.default" alltests)
 endif()
+
 foreach(testcase ${alltests})
     get_testcase_name(${testcase} name "../../3rdparty/musl/libc-test/src/")
     add_libc_test_enc("${name}" "${testcase}")

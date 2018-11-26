@@ -17,21 +17,26 @@ else()
     set(OBJ_FILES "*.o")
 endif()
 
+set (MRI_FILE "${CMAKE_CURRENT_BINARY_DIR}/combine.mri")
+file(WRITE ${MRI_FILE} "create ${OE_LIBDIR}/openenclave/enclave/liboelibcxx.a\n")
+file(APPEND ${MRI_FILE} 
+    "addlib ${CMAKE_BINARY_DIR}/3rdparty/libcxx/liboelibcxx_cxx.a\n")
+file(APPEND ${MRI_FILE} 
+    "addlib ${CMAKE_BINARY_DIR}/3rdparty/libunwind/liboelibcxx_unwind.a\n")
+file(APPEND ${MRI_FILE} 
+    "addlib ${CMAKE_BINARY_DIR}/3rdparty/libcxxrt/libcxxrt/src/libcxxrt.a\n")
+file(APPEND ${MRI_FILE} "save\n")
+file(APPEND ${MRI_FILE} "end\n")
+
 # Use intermediate project and add properties later using an interface library
 include (ExternalProject)
 ExternalProject_Add(oelibcxx_tmp
-    #DEPENDS cxxrt-static oelibcxx_unwind oelibcxx_cxx
-    DEPENDS cxxrt-static oelibcxx_cxx
+    DEPENDS cxxrt-static oelibcxx_unwind oelibcxx_cxx
     DOWNLOAD_COMMAND ""
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND sh -c "rm -f *.o ${OE_LIBDIR}/enclave/liboelibcxx.a files.txt"
-            COMMAND ${AR} x $<TARGET_FILE:cxxrt-static>
-            #COMMAND ${AR} x ${PROJECT_BINARY_DIR}/3rdparty/libunwind/libunwind/src/.libs/libunwind.a
-            COMMAND ${AR} x $<TARGET_FILE:oelibcxx_cxx>
-            COMMAND sh -c "ls *.o* > files.txt"
-            COMMAND sh -c "${AR} qs ${OE_LIBDIR}/openenclave/enclave/liboelibcxx.a ${OBJ_FILES}"
-        INSTALL_COMMAND ""
-        )
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ${AR} -M < "${MRI_FILE}"        
+    INSTALL_COMMAND ""
+)
 
 # Interface lib to propagate includes&lib and install-rule
 add_library(oelibcxx INTERFACE)

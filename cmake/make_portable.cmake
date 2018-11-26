@@ -33,4 +33,10 @@ function(make_portable OE_TARGET)
 	set(CMAKE_CXX_COMPILE_OBJECT
 		"\"${CMAKE_BINARY_DIR}/build_tools/clang_wrapper.exe\" -target x86_64-pc-linux <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE>"
         PARENT_SCOPE)
+    
+    # Change asm file extension
+    # This does not work
+    # set(CMAKE_ASM_SOURCE_FILE_EXTENSIONS ".s,.S")
+
+    # set(CMAKE_C_OUTPUT_EXTENSION ".o")
 endfunction(make_portable)

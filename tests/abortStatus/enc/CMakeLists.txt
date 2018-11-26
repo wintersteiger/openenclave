@@ -6,3 +6,8 @@ add_executable(abortStatus_enc enc.cpp)
 
 target_compile_features(abortStatus_enc PRIVATE cxx_generalized_initializers)
 target_link_libraries(abortStatus_enc oelibcxx oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(abortStatus_enc)
+endif()

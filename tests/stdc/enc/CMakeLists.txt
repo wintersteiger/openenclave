@@ -12,3 +12,8 @@ target_compile_options(stdc_enc PRIVATE
     )
 
 target_link_libraries(stdc_enc oelibc oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(stdc_enc)
+endif()

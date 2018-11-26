@@ -12,3 +12,8 @@ add_executable(pingpong-shared_enc
 
 target_include_directories(pingpong-shared_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(pingpong-shared_enc oelibc oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+    make_portable(pingpong-shared_enc)
+endif()

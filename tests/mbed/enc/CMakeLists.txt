@@ -13,6 +13,10 @@ include_directories(${CMAKE_BINARY_DIR}/3rdparty/mbedtls/mbedtls-wrap-prefix/src
 
 oeedl_file(../mbed.edl enclave gen)
 
+if (USE_PORTABLE_ENCLAVES)
+    include(make_portable)
+endif()
+
 # helper function to create enclave binary
 function(add_libmbed_test_enc NAME )
    
@@ -50,6 +54,7 @@ function(add_libmbed_test_enc NAME )
         )
     target_compile_definitions(libmbedtest_suite_${NAME} PRIVATE -DWITH_MAIN -D__TEST__="${CMAKE_CURRENT_BINARY_DIR}/test_suite_${NAME}.c")
     target_link_libraries(libmbedtest_suite_${NAME} mbedcrypto oelibc oecore)
+    make_portable(libmbedtest_suite_${NAME})
 endfunction(add_libmbed_test_enc)
 
 function(add_libmbed_selftest_enc NAME SOURCE )
@@ -63,7 +68,7 @@ function(add_libmbed_selftest_enc NAME SOURCE )
 
     target_compile_definitions(libmbedtest-${NAME}_enc PRIVATE -DWITH_MAIN -D__TEST__="${SOURCE}")
     target_link_libraries(libmbedtest-${NAME}_enc mbedcrypto oelibc oecore)
-
+    make_portable(libmbedtest-${NAME}_enc)
 endfunction(add_libmbed_selftest_enc)
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} build_type)
