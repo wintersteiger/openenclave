@@ -55,15 +55,19 @@ extern "C" int close(int fd)
     return 0;
 }
 
-extern "C" int test(char** name)
+extern "C" void test()
 {
     extern const char* __TEST__NAME;
     static const char* argv[] = {
         "test", NULL,
     };
     static int argc = sizeof(argv) / sizeof(argv[0]);
-    *name = oe_host_strndup(__TEST__NAME, OE_SIZE_MAX);
-    return main(argc, argv);
+    int ret = main(argc, argv);
+    if (ret != 0)
+    {
+        printf("FAILED: %s (ret=%d)\n", __TEST__NAME, ret);
+        abort();
+    }
 }
 
 OE_SET_ENCLAVE_SGX(

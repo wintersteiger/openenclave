@@ -3,8 +3,7 @@
 
 enclave {
    trusted {
-       public int test(
-           [out] char** name);
+       public void test();
    };
    
    untrusted {

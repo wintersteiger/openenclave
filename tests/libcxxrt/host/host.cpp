@@ -23,16 +23,8 @@
 
 void Test(oe_enclave_t* enclave)
 {
-    int ret = 1;
-    char* name = nullptr;
-    oe_result_t result = test(enclave, &ret, &name);
+    oe_result_t result = test(enclave);
     OE_TEST(result == OE_OK);
-
-    if (ret != 0)
-    {
-        printf("FAILED: %s (ret=%d)\n", name, ret);
-        abort();
-    }
 }
 
 void ocall_exit(uint64_t arg)
