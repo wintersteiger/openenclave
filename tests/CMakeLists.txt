@@ -76,5 +76,6 @@ add_subdirectory(VectorException)
 add_subdirectory(file)
 add_subdirectory(pingpong)
 add_subdirectory(pingpong-shared)
+add_subdirectory(openssl)
 
 endif()
