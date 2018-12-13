@@ -4,7 +4,7 @@
 set(DATA_DIR "../data")
 add_executable(hostcrypto 
     main.c
-    ../../../common/rand.S
+    ../../../common/sgx/rand.S
     ../read_file.c
     ../asn1_tests.c
     ../crl_tests.c

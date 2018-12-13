@@ -68,7 +68,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
     set_source_files_properties(sgx/malloc.c PROPERTIES COMPILE_FLAGS -Wno-conversion)
     
     # jump.s must be optimized for the correct call-frame.
-    set_source_files_properties(jump.c PROPERTIES COMPILE_FLAGS -O2)
+    set_source_files_properties(sgx/jump.c PROPERTIES COMPILE_FLAGS -O2)
 endif()
 
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
