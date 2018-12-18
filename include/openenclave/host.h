@@ -347,6 +347,10 @@ oe_result_t oe_verify_report(
     size_t report_size,
     oe_report_t* parsed_report);
 
+typedef  oe_result_t (*tls_cert_verify_callback_t)(oe_report_t* parsed_report);
+oe_result_t oe_verify_tls_cert( uint8_t* der_crt, size_t der_crt_len,
+                                tls_cert_verify_callback_t verify_enclave_identity_info_callback);
+
 OE_EXTERNC_END
 
 #endif /* _OE_HOST_H */

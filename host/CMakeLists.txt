@@ -61,15 +61,56 @@ if (OE_SGX)
   # OS specific as well.
   if (UNIX)
     list(APPEND PLATFORM_SRC
-      sgx/linux/aep.S
-      sgx/linux/aesm.c
-      sgx/linux/cpuid.c
-      sgx/linux/enter.S
-      sgx/linux/entersim.S
-      sgx/linux/exception.c
-      sgx/linux/sgxioctl.c
-      sgx/linux/sgxquoteprovider.c)
-  else()
+        ../common/sgx/qeidentity.c
+        ../common/sgx/quote.c
+        ../common/sgx/report.c
+        ../common/sgx/revocation.c
+        ../common/sgx/sgxcertextensions.c
+        ../common/sgx/tcbinfo.c
+        sgx/calls.c
+        sgx/create.c
+        sgx/elf.c
+        sgx/enclave.c
+        sgx/enclavemanager.c
+        sgx/exception.c
+        sgx/load.c
+        sgx/loadelf.c
+        sgx/loadpe.c
+        sgx/ocalls.c
+        sgx/quote.c
+        sgx/registers.c
+        sgx/report.c
+        sgx/sgxload.c
+        sgx/sgxmeasure.c
+        sgx/sgxquote.c
+        sgx/sgxsign.c
+        sgx/sgxtypes.c
+        sgx/tlsverifierh.c
+        sgx/traceh.c)
+
+    # OS specific as well.
+    if (UNIX)
+        list(APPEND PLATFORM_SRC
+            sgx/linux/aep.S
+            sgx/linux/aesm.c
+            sgx/linux/cpuid.c
+            sgx/linux/enter.S
+            sgx/linux/entersim.S
+            sgx/linux/exception.c
+            sgx/linux/sgxioctl.c
+            sgx/linux/sgxquoteprovider.c)
+    else()
+        list(APPEND PLATFORM_SRC
+            sgx/windows/aep.asm
+            sgx/windows/aesm.c
+            sgx/windows/cpuid.c
+            sgx/windows/enter.asm
+            sgx/windows/entersim.asm
+            sgx/windows/exception.c)
+    endif()
+
+    set(PLATFORM_FLAGS "-m64")
+elseif(OE_TRUSTZONE)
     list(APPEND PLATFORM_SRC
       sgx/windows/aep.asm
       sgx/windows/aesm.c
