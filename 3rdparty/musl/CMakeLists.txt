@@ -4,8 +4,17 @@
 # Copy MUSL headers to collector dir and wrap
 # actual compilation and lib-generation happens in <ROOT>/libc/
 
-# TODO: Can the last argument always be added?
-set(CFLAGS "-fPIC -DSYSCALL_NO_INLINE -target x86_64-pc-linux")
+set(MUSL_CFLAGS "-fPIC -DSYSCALL_NO_INLINE")
+set(MUSL_CC ${CMAKE_C_COMPILER})
+set(MUSL_CXX ${CMAKE_CXX_COMPILER})
+set(MUSL_APPEND_DEPRECATIONS
+  "${CMAKE_CURRENT_LIST_DIR}/append-deprecations ${MUSL_INCLUDES}")
+if (USE_PORTABLE_ENCLAVES)
+  set(MUSL_CFLAGS "-target x86_64-pc-linux ${MUSL_CFLAGS}")
+  set(MUSL_CC clang)
+  set(MUSL_CXX clang++)
+  set(MUSL_APPEND_DEPRECATIONS "")
+endif ()
 set(PATCHES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/patches)
 set(MUSL_DIR ${CMAKE_CURRENT_BINARY_DIR}/musl)
 set(MUSL_INCLUDES ${OE_INCDIR}/openenclave/libc)
@@ -31,9 +40,9 @@ ExternalProject_Add(musl_includes
     # TODO: Use `find_program` and ensure Bash is available.
     bash -x ./configure
       --includedir=${MUSL_INCLUDES}
-      CFLAGS=${CFLAGS}
-      CC=clang # TODO: Should normally be ${CMAKE_C_COMPILER}
-      CXX=clang++ # TODO: Should normally be ${CMAKE_CXX_COMPILER}
+      CFLAGS=${MUSL_CFLAGS}
+      CC=${MUSL_CC}
+      CXX=${MUSL_CXX}
   BUILD_COMMAND
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${MUSL_DIR}/include
@@ -60,9 +69,8 @@ ExternalProject_Add(musl_includes
     COMMAND ${CMAKE_COMMAND} -E copy
       ${PATCHES_DIR}/endian.h
       ${MUSL_INCLUDES}/endian.h
-      # Append deprecations.h to all C header files.
-    # TODO: Only disable this when USE_PORTABLE_ENCLAVES
-    # COMMAND ${CMAKE_CURRENT_LIST_DIR}/append-deprecations ${MUSL_INCLUDES}
+    # Append deprecations.h to all C header files.
+    COMMAND ${MUSL_APPEND_DEPRECATIONS}
     # Copy local deprecations.h to include/bits/deprecated.h.
     COMMAND ${CMAKE_COMMAND} -E copy
       ${CMAKE_CURRENT_LIST_DIR}/deprecations.h
