@@ -64,6 +64,17 @@ if (USE_LIBSGX AND WIN32)
   message(FATAL_ERROR "USE_LIBSGX is not supported on Windows. Disable this when calling cmake with -DUSE_LIBSGX=OFF")
 endif ()
 
+# TODO: Rename this to e.g. `BUILD_ENCLAVES`.
+if (WIN32)
+  option(USE_PORTABLE_ENCLAVES "TODO: Explain!" ON)
+elseif (UNIX)
+  set(USE_PORTABLE_ENCLAVES ON)
+endif ()
+
+if (USE_PORTABLE_ENCLAVES)
+  include(make_portable)
+endif ()
+
 # TODO: See #756: Fix this because it is incompatible with
 # multi-configuration generators
 if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT WIN32)
