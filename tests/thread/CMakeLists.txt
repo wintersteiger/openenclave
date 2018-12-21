@@ -3,9 +3,9 @@
 
 add_subdirectory(host)
 
-if (UNIX)
-	add_subdirectory(enc)
-endif()
+if (UNIX OR USE_PORTABLE_ENCLAVES)
+  add_subdirectory(enc)
+endif ()
 
 add_enclave_test(tests/oethread 
     thread_host oethread_enc)

@@ -4,4 +4,8 @@
 add_executable(ecall_ocall_enc enc.cpp)
 
 target_compile_features(ecall_ocall_enc PRIVATE cxx_auto_type)
-target_link_libraries(ecall_ocall_enc oelibcxx oeenclave)
+target_link_libraries(ecall_ocall_enc oelibcxx oeenclave oelibc)
+
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(ecall_ocall_enc)
+endif ()

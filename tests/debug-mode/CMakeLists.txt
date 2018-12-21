@@ -3,11 +3,11 @@
 
 add_subdirectory(host)
 
-if (UNIX)
-	add_subdirectory(enc)
-	add_enclave_test(tests/debug-unsigned debug_host debug_enc debug unsigned)
-	set_tests_properties(tests/debug-unsigned PROPERTIES SKIP_RETURN_CODE 2)
-endif()
+if (UNIX OR USE_PORTABLE_ENCLAVES)
+  add_subdirectory(enc)
+  add_enclave_test(tests/debug-unsigned debug_host debug_enc debug unsigned)
+  set_tests_properties(tests/debug-unsigned PROPERTIES SKIP_RETURN_CODE 2)
+endif ()
 
 add_enclave_test(tests/debug-signed  debug_host debug_enc_signed debug signed)
 add_enclave_test(tests/nodebug-signed debug_host no_debug_enc_signed nodebug signed)

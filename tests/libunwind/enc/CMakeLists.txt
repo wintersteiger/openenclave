@@ -29,6 +29,10 @@ target_include_directories(libunwindtest-support PUBLIC
     )
 target_link_libraries(libunwindtest-support PUBLIC oelibcxx oeenclave)
 
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(libunwindtest-support)
+endif ()
+
 function(add_libunwind_test_enc NAME TESTFILE)
     add_executable(libunwindtest-${NAME}_enc
         enc.c
@@ -54,6 +58,10 @@ function(add_libunwind_test_enc NAME TESTFILE)
     target_link_libraries(libunwindtest-${NAME}_enc libunwindtest-support)
     target_link_libraries(libunwindtest-${NAME}_enc -Wl,--undefined=pthread_mutex_lock)
     target_link_libraries(libunwindtest-${NAME}_enc -Wl,--undefined=_U_dyn_info_list_addr)
+
+    if (USE_PORTABLE_ENCLAVES)
+      make_portable(libunwindtest-${NAME}_enc)
+    endif ()
 endfunction(add_libunwind_test_enc)
 
 file(STRINGS "../tests.supported" alltests)

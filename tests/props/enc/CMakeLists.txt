@@ -14,3 +14,8 @@ target_include_directories(props_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(props_enc_unsigned PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(props_enc oeenclave)
 target_link_libraries(props_enc_unsigned oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(props_enc)
+  make_portable(props_enc_unsigned)
+endif ()

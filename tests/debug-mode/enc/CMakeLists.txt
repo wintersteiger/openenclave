@@ -38,3 +38,8 @@ target_link_libraries(no_debug_enc oeenclave)
 target_link_libraries(debug_enc oeenclave)
 target_link_libraries(no_debug_enc_unsigned oeenclave)
 target_link_libraries(debug_enc_unsigned oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    make_portable(no_debug_enc)
+    make_portable(debug_enc)
+endif ()

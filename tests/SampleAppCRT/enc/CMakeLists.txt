@@ -4,3 +4,7 @@
 
 add_executable(SampleAppCRT SampleAppCRT.cpp)
 target_link_libraries(SampleAppCRT oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(SampleAppCRT)
+endif ()

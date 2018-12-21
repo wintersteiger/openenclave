@@ -13,3 +13,7 @@ target_include_directories(abortStatus_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(abortStatus_enc oelibcxx oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+    make_portable(abortStatus_enc)
+endif ()

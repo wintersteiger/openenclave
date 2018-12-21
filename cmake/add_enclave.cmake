@@ -60,3 +60,10 @@ function(add_enclave)
   add_custom_target(${ENCLAVE_TARGET}_signed_target ALL DEPENDS ${SIGNED_LOCATION})
   
 endfunction()
+
+# TODO: This was in the original branch but makes no sense.
+if (USE_CLANG)
+  add_custom_target(unused)
+  include(make_portable)
+  make_portable(unused)
+endif ()

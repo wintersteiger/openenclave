@@ -9,3 +9,7 @@ add_executable(hexdump_enc enc.c ${gen})
 
 target_include_directories(hexdump_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(hexdump_enc oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(hexdump_enc)
+endif ()

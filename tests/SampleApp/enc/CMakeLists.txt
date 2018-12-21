@@ -3,3 +3,7 @@
 
 add_executable(SampleApp CallWrappers.cpp SampleApp.cpp)
 target_link_libraries(SampleApp oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(SampleApp)
+endif ()

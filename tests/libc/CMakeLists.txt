@@ -3,8 +3,8 @@
 
 add_subdirectory(host)
 
-if (UNIX)
-    add_subdirectory(enc)
+if (UNIX OR USE_PORTABLE_ENCLAVES)
+  add_subdirectory(enc)
 endif()
 
 add_enclave_test(tests/libc libc_host libc_enc)

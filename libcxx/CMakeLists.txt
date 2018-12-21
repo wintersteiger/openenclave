@@ -2,6 +2,9 @@
 # Licensed under the MIT License.
 
 add_library(oelibcxx STATIC)
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(oelibcxx)
+endif ()
 
 # NOTE: The three listed libraries are all `OBJECT` libraries, which
 # is just a collection of objects known to CMake. By "linking" them

@@ -7,12 +7,16 @@ set(PLATFORM_SRC
     linux/reloc.c
     linux/threadlocal.c
     )
+elseif (WIN32 AND USE_PORTABLE_ENCLAVES)
+set(PLATFORM_SRC
+    linux/reloc.c
+    )
 elseif (WIN32)
 set(PLATFORM_SRC
     ../../common/rand.asm
     windows/reloc.c
     )
-endif()
+endif ()
 
 add_library(oecore STATIC
     ../../common/safecrt.c
@@ -50,6 +54,16 @@ add_library(oecore STATIC
     ${PLATFORM_SRC}
     )
 
+if (USE_PORTABLE_ENCLAVES)
+  # Treat .S files as C files to compile them
+  # TODO: Remove this hack.
+  set_source_files_properties(enter.S PROPERTIES LANGUAGE C)
+  set_source_files_properties(exit.S PROPERTIES LANGUAGE C)
+  set_source_files_properties(getkey.S PROPERTIES LANGUAGE C)
+
+  make_portable(oecore)
+endif ()
+
 target_link_libraries(oecore PUBLIC oe_includes)
 
 # This directory contains dummy C headers needed by dlmalloc:
@@ -73,6 +87,7 @@ target_compile_options(oecore PUBLIC
     -nostdinc
     -fno-stack-protector
     -fvisibility=hidden
+    -mxsave # TODO: This might conflict with ARM work.
     )
 
 target_compile_options(oecore INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)

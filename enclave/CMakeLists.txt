@@ -41,3 +41,10 @@ set_property(TARGET oeenclave PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/ope
 
 install(TARGETS oeenclave EXPORT openenclave-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  # Treat .S files as C files to compile them
+  # TODO: Remove this hack.
+  set_source_files_properties(start.S PROPERTIES LANGUAGE C)
+  make_portable(oeenclave)
+endif ()

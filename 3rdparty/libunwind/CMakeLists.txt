@@ -108,6 +108,17 @@ add_library(libunwind OBJECT
   # Add dependency to libunwind.h generation.
   ${CMAKE_CURRENT_BINARY_DIR}/libunwind.h)
 
+if (USE_PORTABLE_ENCLAVES)
+  # Treat .S files as C files to compile them
+  # TODO: Remove this hack.
+  set_source_files_properties(setcontext.S PROPERTIES LANGUAGE C)
+  set_source_files_properties(libunwind/src/x86_64/getcontext.S PROPERTIES LANGUAGE C)
+  set_source_files_properties(libunwind/src/x86_64/longjmp.S PROPERTIES LANGUAGE C)
+  set_source_files_properties(libunwind/src/x86_64/siglongjmp.S PROPERTIES LANGUAGE C)
+
+  make_portable(libunwind)
+endif ()
+
 set_target_properties(libunwind PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set_source_files_properties(Gstep.c PROPERTIES COMPILE_FLAGS "-Werror")

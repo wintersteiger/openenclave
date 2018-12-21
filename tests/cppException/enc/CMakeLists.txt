@@ -13,3 +13,7 @@ target_include_directories(cppException_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(cppException_enc oelibcxx oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(cppException_enc)
+endif ()

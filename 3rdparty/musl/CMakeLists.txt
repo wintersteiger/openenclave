@@ -4,7 +4,8 @@
 # Copy MUSL headers to collector dir and wrap
 # actual compilation and lib-generation happens in <ROOT>/libc/
 
-set(CFLAGS "-fPIC -DSYSCALL_NO_INLINE")
+# TODO: Can the last argument always be added?
+set(CFLAGS "-fPIC -DSYSCALL_NO_INLINE -target x86_64-pc-linux")
 set(PATCHES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/patches)
 set(MUSL_DIR ${CMAKE_CURRENT_BINARY_DIR}/musl)
 set(MUSL_INCLUDES ${OE_INCDIR}/openenclave/libc)
@@ -14,7 +15,7 @@ ExternalProject_Add(musl_includes
   DOWNLOAD_COMMAND
     ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_LIST_DIR}/musl
-    ${CMAKE_CURRENT_BINARY_DIR}/musl
+    ${MUSL_DIR}
   PATCH_COMMAND
     COMMAND ${CMAKE_COMMAND} -E copy
       ${MUSL_DIR}/arch/x86_64/syscall_arch.h
@@ -26,34 +27,48 @@ ExternalProject_Add(musl_includes
       ${PATCHES_DIR}/pthread_arch.h
       ${MUSL_DIR}/arch/x86_64/pthread_arch.h
   CONFIGURE_COMMAND
-    ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR}/musl
-    ./configure
+    ${CMAKE_COMMAND} -E chdir ${MUSL_DIR}
+    # TODO: Use `find_program` and ensure Bash is available.
+    bash -x ./configure
       --includedir=${MUSL_INCLUDES}
       CFLAGS=${CFLAGS}
-      CC=${CMAKE_C_COMPILER}
-      CXX=${CMAKE_CXX_COMPILER}
+      CC=clang # TODO: Should normally be ${CMAKE_C_COMPILER}
+      CXX=clang++ # TODO: Should normally be ${CMAKE_CXX_COMPILER}
   BUILD_COMMAND
-    ${CMAKE_COMMAND} -E chdir ${CMAKE_CURRENT_BINARY_DIR}/musl
-    make install-headers
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${MUSL_DIR}/include
+        ${MUSL_INCLUDES}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${MUSL_DIR}/arch/generic/bits
+        ${MUSL_INCLUDES}/bits
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${MUSL_DIR}/arch/x86_64/bits
+        ${MUSL_INCLUDES}/bits
+    COMMAND sed -f ${MUSL_DIR}/tools/mkalltypes.sed
+        ${MUSL_DIR}/arch/x86_64/bits/alltypes.h.in
+        ${MUSL_DIR}/include/alltypes.h.in >
+        ${MUSL_INCLUDES}/bits/alltypes.h
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${MUSL_DIR}/arch/x86_64/bits/syscall.h.in
+        ${MUSL_INCLUDES}/bits/syscall.h
+    COMMAND sed -n -e s/__NR_/SYS_/p
+        < ${MUSL_DIR}/arch/x86_64/bits/syscall.h.in
+        >> ${MUSL_INCLUDES}/bits/syscall.h
     COMMAND ${CMAKE_COMMAND} -E copy
       ${MUSL_INCLUDES}/endian.h
       ${MUSL_INCLUDES}/__endian.h
     COMMAND ${CMAKE_COMMAND} -E copy
       ${PATCHES_DIR}/endian.h
       ${MUSL_INCLUDES}/endian.h
-
-    # Append deprecations.h to all C header files.
-    COMMAND ${CMAKE_CURRENT_LIST_DIR}/append-deprecations
-      ${MUSL_INCLUDES}
-
+      # Append deprecations.h to all C header files.
+    # TODO: Only disable this when USE_PORTABLE_ENCLAVES
+    # COMMAND ${CMAKE_CURRENT_LIST_DIR}/append-deprecations ${MUSL_INCLUDES}
     # Copy local deprecations.h to include/bits/deprecated.h.
     COMMAND ${CMAKE_COMMAND} -E copy
       ${CMAKE_CURRENT_LIST_DIR}/deprecations.h
       ${MUSL_INCLUDES}/bits/deprecations.h
-
   BUILD_BYPRODUCTS
-    ${MUSL_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/musl
-
+    ${MUSL_INCLUDES} ${MUSL_DIR}
   INSTALL_COMMAND "")
 
 add_library(oelibc_includes INTERFACE)

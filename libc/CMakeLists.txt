@@ -702,7 +702,7 @@ if (CMAKE_C_COMPILER_ID MATCHES GNU)
     -Wno-unused-function
     -Wno-unused-value
     -Wno-unused-variable)
-elseif (CMAKE_C_COMPILER_ID MATCHES Clang)
+elseif (CMAKE_C_COMPILER_ID MATCHES Clang OR USE_PORTABLE_ENCLAVES)
   target_compile_options(oelibc PRIVATE
     -Wno-dangling-else
     -Wno-ignored-attributes
@@ -734,3 +734,24 @@ set_property(TARGET oelibc PROPERTY
 
 install(TARGETS oelibc oelibasm EXPORT openenclave-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  # Treat .S files as C files to compile them
+  # TODO: Remove this hack.
+  set_source_files_properties(abort.S PROPERTIES LANGUAGE C)
+  set_source_files_properties(exp2l.S PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/math/x86_64/acosl.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/math/x86_64/asinl.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/math/x86_64/log1pl.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/math/x86_64/log2l.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/math/x86_64/logl.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/math/x86_64/exp2l.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/math/x86_64/sqrt.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/math/x86_64/sqrtl.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/math/x86_64/sqrtf.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/fenv/x86_64/fenv.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/setjmp/x86_64/longjmp.s PROPERTIES LANGUAGE C)
+  set_source_files_properties(${MUSLSRC}/setjmp/x86_64/setjmp.s PROPERTIES LANGUAGE C)
+
+  make_portable(oelibc)
+endif ()

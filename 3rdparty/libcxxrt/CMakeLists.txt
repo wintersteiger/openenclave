@@ -15,6 +15,10 @@ add_library(libcxxrt OBJECT
   libcxxrt/src/auxhelper.cc
   libcxxrt/src/libelftc_dem_gnu3.c)
 
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(libcxxrt)
+endif ()
+
 set_target_properties(libcxxrt PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 

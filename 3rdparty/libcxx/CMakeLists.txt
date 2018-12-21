@@ -46,6 +46,10 @@ add_library(libcxx OBJECT
   libcxx/src/variant.cpp
   libcxx/src/vector.cpp)
 
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(libcxx)
+endif()
+
 add_dependencies(libcxx libcxx_includes)
 
 set_target_properties(libcxx PROPERTIES

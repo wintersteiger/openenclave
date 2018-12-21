@@ -20,3 +20,7 @@ target_include_directories(stdc_enc PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(stdc_enc oelibc oeenclave)
+
+if (USE_PORTABLE_ENCLAVES)
+  make_portable(stdc_enc)
+endif ()
