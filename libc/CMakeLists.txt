@@ -29,7 +29,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(oelibasm PRIVATE -Wno-error=unused-command-line-argument)
 endif ()
 
-if (UNIX)
+if (UNIX OR BUILD_ENCLAVES)
 set(PLATFORM_SRC
     ../common/rand.S
 )

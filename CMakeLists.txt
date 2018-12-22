@@ -66,9 +66,15 @@ endif ()
 
 # TODO: Rename this to e.g. `BUILD_ENCLAVES`.
 if (WIN32)
-  option(USE_PORTABLE_ENCLAVES "TODO: Explain!" ON)
+  # In Windows enclaves are build only if cross-compilation via clang is enabled.
+  if (USE_PORTABLE_ENCLAVES)
+    option(BUILD_ENCLAVES "Build enclaves" ON)
+  else()
+    option(BUILD_ENCLAVES "Build enclaves" OFF)
+  endif()
 elseif (UNIX)
-  set(USE_PORTABLE_ENCLAVES ON)
+  # Enclaves are built by default on Linux
+  set(BUILD_ENCLAVES ON)
 endif ()
 
 if (USE_PORTABLE_ENCLAVES)

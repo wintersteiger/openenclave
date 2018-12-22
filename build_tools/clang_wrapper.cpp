@@ -25,7 +25,10 @@ struct option_map {
     {"/Od", NULL},
     {"/O2", "-O2"},
     {"/RTC1", NULL},
-    {"/FS", NULL}
+    {"/FS", NULL},
+    {"-std:c++11", "-std=c++11"},
+    {"-std:c++14", "-std=c++14"},
+    {"-std:c++17", "-std=c++17"}
 };
 
 const size_t g_table_size = sizeof(g_table)/sizeof(g_table[0]);

@@ -9,7 +9,9 @@ set(PLATFORM_SRC
     )
 elseif (WIN32 AND USE_PORTABLE_ENCLAVES)
 set(PLATFORM_SRC
+    ../../common/rand.S
     linux/reloc.c
+    linux/threadlocal.c
     )
 elseif (WIN32)
 set(PLATFORM_SRC
