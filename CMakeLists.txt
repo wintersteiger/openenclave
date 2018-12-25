@@ -155,4 +155,6 @@ if (UNIX)
   add_subdirectory(docs/refman)
   add_subdirectory(pkgconfig)
   add_subdirectory(samples)
-endif()
+  add_subdirectory(libsocket)
+endif ()
+
