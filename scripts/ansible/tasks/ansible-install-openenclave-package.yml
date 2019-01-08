@@ -1,29 +1,20 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 ---
-- name: Add LLVM and Microsoft APT repo keys
+- name: Add Microsoft APT repo keys
   apt_key: url={{item}} state=present
   with_items:
-    - https://apt.llvm.org/llvm-snapshot.gpg.key
     - https://packages.microsoft.com/keys/microsoft.asc
 
-- name: Add LLVM and Microsoft APT repositories
+- name: Add Microsoft APT repository
   apt_repository: repo={{item}} state=present update_cache=yes
   with_items:
-    - deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main
     - deb [arch=amd64] https://packages.microsoft.com/ubuntu/16.04/prod xenial main
 
-- name: Install prerequisites
+- name: Install Open Enclave package
   apt:
     name: [
-      clang-7,
-      libssl-dev,
-      make,
-      gcc,
-      gdb,
-      g++,
-      pkg-config,
-      az-dcap-client
+      open-enclave
     ]
     state: present
     update_cache: yes
