@@ -99,6 +99,9 @@ static int wsa_init_done = 0;
 
 #include <stdint.h>
 
+
+#include "oe_socket.c"
+
 /*
  * Prepare for using the sockets interface
  */
