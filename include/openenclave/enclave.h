@@ -874,7 +874,9 @@ typedef enum _oe_cert_format {
 // Should this be an enclave API?
 oe_result_t oe_gen_x509cert_for_TLS(oe_cert_format_t cert_format,
                                     uint8_t** output_cert,
-                                    size_t* output_cert_size);
+                                    size_t* output_cert_size,
+                                    uint8_t** private_key,
+                                    size_t* private_key_size);
 /**
  * Frees the given cert
  *
