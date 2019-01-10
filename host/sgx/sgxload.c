@@ -514,7 +514,8 @@ oe_result_t oe_sgx_create_enclave(
         if (!base)
             OE_RAISE_MSG(
                 OE_PLATFORM_ERROR,
-                "enclave_create with ENCLAVE_TYPE_SGX1 type failed");
+                "enclave_create with ENCLAVE_TYPE_SGX1 type failed",
+                NULL);
 
         secs->base = (uint64_t)base;
 
@@ -836,7 +837,7 @@ oe_result_t oe_sgx_initialize_enclave(
                 (const void*)&sigstruct,
                 sizeof(sgx_sigstruct_t),
                 &enclave_error))
-            OE_RAISE_MSG(OE_PLATFORM_ERROR, "enclave_initialize failed");
+            OE_RAISE_MSG(OE_PLATFORM_ERROR, "enclave_initialize failed", NULL);
 
         if (enclave_error != 0)
             OE_RAISE_MSG(
