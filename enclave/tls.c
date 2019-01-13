@@ -237,23 +237,19 @@ oe_result_t generate_x509_cert( uint8_t*issuer_key_buf,
     // Write a built up certificate to a X509 DER structure Note: data
     // is written at the end of the buffer! Use the return value to
     // determine where you should start using the buffer.
-//    if (OE_CERT_FORMAT_DER == cert_format) {
-        bytes_written = (size_t)mbedtls_x509write_crt_der(&x509cert, _cert_buf, MAX_CERT_SIZE,
-                                                  mbedtls_ctr_drbg_random, &ctr_drbg);
-        OE_TRACE_INFO("bytes_written = 0x%x", bytes_written);
-        if (bytes_written <= 0)
-            OE_RAISE_MSG(OE_FAILURE, "bytes_written = 0x%x ", bytes_written);
 
-        // allocate memory for cert output buffer
-        host_cert_buf = (uint8_t*)oe_malloc(bytes_written);
-        if (host_cert_buf == NULL)
-                goto done;
-        // copy to host buffer 
-        oe_memcpy((void*)host_cert_buf, (const void*)(_cert_buf + sizeof(_cert_buf) - bytes_written), bytes_written);
-        //*der_cert_len = bytes_written;
+    bytes_written = (size_t)mbedtls_x509write_crt_der(&x509cert, _cert_buf, MAX_CERT_SIZE,
+                                                mbedtls_ctr_drbg_random, &ctr_drbg);
+    OE_TRACE_INFO("bytes_written = 0x%x", bytes_written);
+    if (bytes_written <= 0)
+        OE_RAISE_MSG(OE_FAILURE, "bytes_written = 0x%x ", bytes_written);
 
- //   }
-
+    // allocate memory for cert output buffer
+    host_cert_buf = (uint8_t*)oe_malloc(bytes_written);
+    if (host_cert_buf == NULL)
+            goto done;
+    // copy to host buffer 
+    oe_memcpy((void*)host_cert_buf, (const void*)(_cert_buf + sizeof(_cert_buf) - bytes_written), bytes_written);
 
     *output_cert_size = (size_t)bytes_written;
     *output_cert = host_cert_buf;

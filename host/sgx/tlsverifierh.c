@@ -12,6 +12,8 @@
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
 
 static unsigned char oid_oe_report[] = {0x2A, 0x86, 0x48, 0x86, 0xF8, 0x4D, 0x8A, 0x39, 0x01};
 
@@ -106,36 +108,112 @@ done:
     return result;
 }
 
+#define PUBLIC_KEY_SIZE     512
+#define SHA256_DIGEST_SIZE  32
 // TODO: move this to shared library
 // verify report data against peer certificate
-// oe_result_t verify_report_data(mbedtls_x509_crt* crt, uint8_t*  report_data)
-// {
-//     #define PUBLIC_KEY_SIZE     512
-//     #define SHA256_DIGEST_SIZE  32
-//     oe_result_t result = OE_FAILURE;
-//     int ret = 0;
-//     uint8_t pk_buf[PUBLIC_KEY_SIZE];
-//     uint8_t sha256[SHA256_DIGEST_SIZE];
+oe_result_t verify_report_data(uint8_t *key_buff, uint8_t*  report_data);
+oe_result_t get_public_key_from_cert(X509* cert, uint8_t *key_buff, size_t *key_size);
+oe_result_t verify_cert(X509 *cert);
 
-//     oe_memset(pk_buf, 0, sizeof(pk_buf));
-//     ret  = mbedtls_pk_write_pubkey_pem(&crt->pk, pk_buf, sizeof(pk_buf));
-//     if (ret)
-//         OE_RAISE_MSG(OE_FAILURE, "ret = %d", ret);
+oe_result_t verify_cert(X509 *cert)
+{
+    oe_result_t result=OE_VERIFY_FAILED;
+     int ret = 0;
+     X509_STORE *store = 0;
+     X509_STORE_CTX *ctx = 0;
 
-//     oe_memset(sha256, 0, SHA256_DIGEST_SIZE);
-//     mbedtls_sha256_ret(pk_buf, sizeof(pk_buf), sha256, 0);
+     store = X509_STORE_new();
+     //X590_STORE_add_cert(store, cacert);
+     ctx = X509_STORE_CTX_new();
+     X509_STORE_CTX_init(ctx, store, cert, NULL);
 
-//     if (oe_memcmp(report_data, sha256, SHA256_DIGEST_SIZE) != 0)
-//     {
-//        OE_RAISE_MSG(OE_VERIFY_FAILED, "hash of peer certificate's public key does not match report data", NULL);
-//     }
+     ret = X509_verify_cert(ctx);
+     if (ret != 1)
+     {
+        OE_TRACE_ERROR("X590_verify_cert failed", NULL);
+        goto done;
+     }
+     result = OE_OK;
+done:
+    return result;
+}
 
-//     result = OE_OK;
-// done:
-//     return result;
-// return OE_OK;
-// }
+oe_result_t verify_report_data(uint8_t *key_buff, uint8_t*  report_data)
+{
+    oe_result_t result = OE_FAILURE;
+    OE_SHA256 sha256;
+    oe_sha256_context_t sha256_ctx = {0};
 
+    OE_CHECK(oe_sha256_init(&sha256_ctx));
+    OE_CHECK(oe_sha256_update(&sha256_ctx, key_buff, PUBLIC_KEY_SIZE));
+    OE_CHECK(oe_sha256_final(&sha256_ctx, &sha256));
+
+    if (memcmp(report_data, (uint8_t*)&sha256, SHA256_DIGEST_SIZE) != 0)
+    {
+       OE_RAISE_MSG(OE_VERIFY_FAILED, "hash of peer certificate's public key does not match report data", NULL);
+    }
+    OE_TRACE_INFO("report data validation passed", NULL);
+
+    result = OE_OK;
+done:
+    return result;
+}
+oe_result_t get_public_key_from_cert(X509* cert, uint8_t *key_buff, size_t *key_size)
+{
+    oe_result_t result = OE_FAILURE;
+    EVP_PKEY *pkey = NULL;
+    BIO *bio_mem = BIO_new(BIO_s_mem());
+    int bio_len = 0;
+    int ret = 0;
+
+    // Extract the certificate's public key
+    if ((pkey = X509_get_pubkey(cert)) == NULL)
+        OE_RAISE(result, "Error getting public key from certificate", NULL);
+
+    OE_TRACE_INFO("extract_x509_report_extension() succeeded");
+
+    /* ---------------------------------------------------------- *
+    * Print the public key information and the key in PEM format *
+    * ---------------------------------------------------------- */
+    // display the key type and size  in PEM format
+    if (pkey) {
+        switch (pkey->type) {
+        case EVP_PKEY_RSA:
+            OE_TRACE_INFO("%d bit RSA Key\n\n", EVP_PKEY_bits(pkey));
+            break;
+        case EVP_PKEY_DSA:
+            OE_TRACE_INFO("%d bit DSA Key\n\n", EVP_PKEY_bits(pkey));
+            break;
+        default:
+            OE_TRACE_INFO("%d bit  non-RSA/DSA Key\n\n", EVP_PKEY_bits(pkey));
+            break;
+        }
+    }
+
+    if(!PEM_write_bio_PUBKEY(bio_mem, pkey))
+        OE_RAISE(OE_FAILURE, "Error writing public key data in PEM format", NULL);
+
+    bio_len = BIO_pending(bio_mem);
+    ret = BIO_read(bio_mem, key_buff, bio_len);
+    if (ret != bio_len)
+    {
+        // that no data was successfully read or written if the result is 0 or -1. If the return value is -2
+        // then the operation is not implemented in the specific BIO type.
+        OE_RAISE(result, "BIO_read key data failed ret = %d", ret);
+    }
+    // Insert the NUL terminator
+    key_buff[bio_len] = '\0';
+
+    OE_TRACE_INFO("public key from cert:\n[%s]\n", key_buff);
+    *key_size = (size_t)bio_len;
+    result = OE_OK;
+done:
+    BIO_free_all(bio_mem);
+    EVP_PKEY_free(pkey);
+
+    return result;
+}
 oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len, 
                                 tls_cert_verify_callback_t verify_enclave_identity_info_callback)
 {
@@ -144,24 +222,54 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len,
     X509* cert = NULL;
     uint8_t* report = NULL;
     size_t report_size = 0;
+    uint8_t pub_key_buf[PUBLIC_KEY_SIZE];
+    size_t pub_key_buf_size = 0;
+    oe_report_t parsed_report = {0};
+
+//  OpenSSL_add_all_algorithms();
+//   ERR_load_BIO_strings();
+//   ERR_load_crypto_strings();
 
     // create a OpenSSL cert object from encoded cert data in DER format
     cert = d2i_X509(NULL, &p, (uint32_t)cert_in_der_len);
     if (cert == NULL)
         OE_RAISE(result, "d2i_X509 failed err=[%s]", ERR_error_string(ERR_get_error(), NULL));
 
+    // validate the certificate signature
+
+    //result = verify_cert(cert);
+    //OE_CHECK(result);
+
+    //------------------------------------------------------------------------
+    // Validate the report's trustworthiness
+    // Verify the remote report to ensure its authenticity.
+    // set enclave to NULL because we are dealing only with remote report now
+    //------------------------------------------------------------------------
     result = extract_x509_report_extension(cert, &report, &report_size);
     OE_CHECK(result);
     OE_TRACE_INFO("extract_x509_report_extension() succeeded");
 
-    // 1)  Validate the report's trustworthiness
-    // Verify the remote report to ensure its authenticity.
-    // set enclave to NULL because we are dealing only with remote report now
-    oe_report_t parsed_report = {0};
     result = oe_verify_report(NULL, report, report_size, &parsed_report);
     OE_CHECK(result);
     OE_TRACE_INFO("oe_verify_report() succeeded");
 
+    //--------------------------------------
+    // verify report data: hash(public key)
+    //--------------------------------------
+
+    // extract public key from the cert
+    oe_memset_s(pub_key_buf, sizeof(pub_key_buf), 0, sizeof(pub_key_buf));
+    result = get_public_key_from_cert(cert, pub_key_buf, &pub_key_buf_size);
+    OE_CHECK(result);
+
+    // verify report data against peer certificate
+    result = verify_report_data(pub_key_buf, parsed_report.report_data);
+    OE_CHECK(result);
+    OE_TRACE_INFO("verify_report_data passed", NULL);
+
+    //---------------------------------------
+    // call client to check enclave identity
+    // --------------------------------------
     if (verify_enclave_identity_info_callback)
     {
         result = verify_enclave_identity_info_callback(&parsed_report);
@@ -192,10 +300,6 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len,
     // ret = verify_report_data_against_server_cert(cert, &quote);
     // assert(ret == 0);
 
-    // verify report data against peer certificate
-    // result = verify_report_data(&crt, parsed_report.report_data);
-    // OE_CHECK(result);
-    // OE_TRACE_INFO("verify_report_data passed", NULL);
 
 done:
     if (cert)

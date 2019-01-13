@@ -4,14 +4,8 @@
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/internal/raise.h>
-// #include <openenclave/internal/report.h>
-// #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/utils.h>
-
 #include <openenclave/internal/enclavelibc.h>
-//#include "../common/common.h"
-// #include <openenclave/internal/print.h>
-// #include <stdio.h>
 
 // Using mbedtls to create an extended X.509 certificate
 #include <mbedtls/entropy.h>
@@ -44,12 +38,6 @@ static int _extract_x509_extension
  
 //TODO: 
 // Should make this extension a critical one!
-// if( ( ret = mbedtls_x509_get_ext( p, end, &crt->v3_ext, 3 ) ) != 0 )
-// {
-//     if( ret == MBEDTLS_ERR_ASN1_UNEXPECTED_TAG )
-//         return( 0 );
-//     return( ret );
-// }
 
     p = (unsigned char *)ext3_data + 83; // need to find out why it;s 83!
     end = p + exts_data_len;
@@ -174,6 +162,7 @@ oe_result_t verify_report_data(mbedtls_x509_crt* crt, uint8_t*  report_data)
             OE_TRACE_ERROR("[%d] report_data[0x%x] sha256=0x%x ", i, report_data[i], sha256[i]);
         OE_RAISE_MSG(OE_VERIFY_FAILED, "hash of peer certificate's public key does not match report data", NULL);
     }
+
     OE_TRACE_INFO("Report user data validation passed");
     result = OE_OK;
 done:
