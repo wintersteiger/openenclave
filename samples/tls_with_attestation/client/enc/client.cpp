@@ -26,7 +26,7 @@
 
 #define DEBUG_LEVEL 1
 
-oe_result_t enclave_identity_verifier_callback(oe_report_t* parsed_report);
+oe_result_t enclave_identity_verifier_callback(oe_identity_t* identity);
 
 extern "C" {
 	int launch_tls_client(char* server_name, char* server_port);

@@ -10,62 +10,48 @@
 #include <string.h>
 #include "tls_u.h"
 
-// 2) validate the enclave identity's signed_id is the hash of the public
-// signing key that was used to sign an enclave. Check that the enclave was
-// signed by an trusted entity.
-oe_result_t enclave_identity_verifier(oe_report_t* parsed_report)
+oe_result_t enclave_identity_verifier(oe_identity_t* identity)
 {
+    oe_result_t result = OE_VERIFY_FAILED;
+
     printf("enclave_identity_verifier is called with parsed report:\n");
 
-    // report type
-    if (parsed_report->type == OE_ENCLAVE_TYPE_SGX)
-        printf("parsed_report->type is OE_ENCLAVE_TYPE_SGX\n");
-    else
-        printf("Unexpected report type\n");
-
     // Check the enclave's security version
-    printf("parsed_report.identity.security_version = %d\n", parsed_report->identity.security_version);
-    // if (parsed_report.identity.security_version < 1)
-    // {
-    // }
+    printf("identity.security_version = %d\n", identity->security_version);
+    if (identity->security_version < 1)
+    {
+        printf("identity.security_version check failed (%d)\n", identity->security_version);
+        goto done;
+    }
 
     // the unique ID for the enclave
     // For SGX enclaves, this is the MRENCLAVE value
-    printf("parsed_report->identity.signer_id :\n");
+    printf("identity->signer_id :\n");
     for (int i = 0; i < OE_UNIQUE_ID_SIZE; i++)
     {
-        printf("0x%0x ", (uint8_t)parsed_report->identity.signer_id[i]);
+        printf("0x%0x ", (uint8_t)identity->signer_id[i]);
     }
 
     // The signer ID for the enclave.
     // For SGX enclaves, this is the MRSIGNER value
-    printf("\nparsed_report->identity.signer_id :\n");
+    printf("\nidentity->signer_id :\n");
     for (int i = 0; i < OE_SIGNER_ID_SIZE; i++)
     {
-        printf("0x%0x ", (uint8_t)parsed_report->identity.signer_id[i]);
+        printf("0x%0x ", (uint8_t)identity->signer_id[i]);
     }
     
     // The Product ID for the enclave.
     // For SGX enclaves, this is the ISVPRODID value
-    printf("\nparsed_report->identity.product_id :\n");
+    printf("\nidentity->product_id :\n");
     for (int i = 0; i < OE_PRODUCT_ID_SIZE; i++)
     {
-        printf("0x%0x ", (uint8_t)parsed_report->identity.product_id[i]);
+        printf("0x%0x ", (uint8_t)identity->product_id[i]);
     }
 
-    // // 3) Validate the report data
-    // //    The report_data has the hash value of the report data
-    // if (m_crypto->Sha256(data, data_size, sha256) != 0)
-    // {
-    //     goto exit;
-    // }
+    result = OE_OK;
+done:
 
-    // if (memcmp(parsed_report.report_data, sha256, sizeof(sha256)) != 0)
-    // {
-    //     TRACE_ENCLAVE("SHA256 mismatch.");
-    //     goto exit;
-    // }
-    return OE_OK;
+    return result;
 }
 
 int main(int argc, const char* argv[])

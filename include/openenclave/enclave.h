@@ -849,7 +849,8 @@ oe_enclave_t* oe_get_enclave(void);
 oe_result_t oe_random(void* data, size_t size);
 
 
-// free(*output_cert);
+// TODO:
+// Add detailed comments here
 oe_result_t oe_gen_x509cert_for_TLS(uint8_t* issuer_key,
                                     size_t   issuer_key_size,
                                     uint8_t* subject_key,
@@ -858,12 +859,14 @@ oe_result_t oe_gen_x509cert_for_TLS(uint8_t* issuer_key,
                                     size_t* output_cert_size);
 /**
  * Free the given cert
- * @param cert If not NULL, the key buffer to free.
+ * @param cert If not NULL, the buffer to free.
  */
 void oe_free_x509cert_for_TLS(uint8_t* cert);
-typedef  oe_result_t (*tls_cert_verify_callback_t)(oe_report_t* parsed_report);
+
+
+typedef  oe_result_t (*oe_enclave_identity_verify_callback_t)(oe_identity_t* identity);
 oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len,
-                                tls_cert_verify_callback_t verify_enclave_identity_info_callback);
+                                oe_enclave_identity_verify_callback_t enclave_identity_callback);
 OE_EXTERNC_END
 
 #endif /* _OE_ENCLAVE_H */
