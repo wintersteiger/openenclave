@@ -119,6 +119,67 @@ done:
     return result;
 }
 
+static int Sha256(const uint8_t* data, size_t data_size, uint8_t sha256[32])
+{
+    int ret = 0;
+    mbedtls_sha256_context ctx;
+
+    mbedtls_sha256_init(&ctx);
+
+    ret = mbedtls_sha256_starts_ret(&ctx, 0);
+    if (ret)
+        goto exit;
+
+    ret = mbedtls_sha256_update_ret(&ctx, data, data_size);
+    if (ret)
+        goto exit;
+
+    ret = mbedtls_sha256_finish_ret(&ctx, sha256);
+    if (ret)
+        goto exit;
+
+exit:
+    mbedtls_sha256_free(&ctx);
+    return ret;
+}
+
+// verify report data against peer certificate
+oe_result_t verify_report_data(mbedtls_x509_crt* crt, uint8_t*  report_data)
+{
+    #define PUBLIC_KEY_SIZE     512
+    #define SHA256_DIGEST_SIZE  32
+    oe_result_t result = OE_FAILURE;
+    int ret = 0;
+    uint8_t pk_buf[PUBLIC_KEY_SIZE];
+    uint8_t sha256[SHA256_DIGEST_SIZE];
+
+    oe_memset(pk_buf, 0, sizeof(pk_buf));
+    ret  = mbedtls_pk_write_pubkey_pem(&crt->pk, pk_buf, sizeof(pk_buf));
+    if (ret)
+        OE_RAISE_MSG(OE_FAILURE, "ret = %d", ret);
+
+    oe_memset(sha256, 0, SHA256_DIGEST_SIZE);
+    Sha256(pk_buf, sizeof(pk_buf), sha256);
+
+    OE_TRACE_VERBOSE("public key from the peer certificate =\n[%s]", pk_buf);
+    for (size_t i=0; i<sizeof(sha256); i++)
+    {
+        OE_TRACE_VERBOSE("sha256[%d]=0x%x", i, sha256[i]);
+    }
+
+    // validate report's user data which contains hash(public key)
+    if (oe_memcmp(report_data, sha256, SHA256_DIGEST_SIZE) != 0)
+    {
+        for (int i=0; i<SHA256_DIGEST_SIZE; i++)
+            OE_TRACE_ERROR("[%d] report_data[0x%x] sha256=0x%x ", i, report_data[i], sha256[i]);
+        OE_RAISE_MSG(OE_VERIFY_FAILED, "hash of peer certificate's public key does not match report data", NULL);
+    }
+    OE_TRACE_INFO("Report user data validation passed");
+    result = OE_OK;
+done:
+    return result;
+}
+
 oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len, 
                                 tls_cert_verify_callback_t verify_enclave_identity_info_callback)
 {
@@ -147,6 +208,10 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len,
     result = oe_verify_report(report, report_size, &parsed_report);
     OE_CHECK(result);
     OE_TRACE_INFO("oe_verify_report() succeeded");
+
+    // verify report data against peer certificate
+    result = verify_report_data(&crt, parsed_report.report_data);
+    OE_CHECK(result);
 
     if (verify_enclave_identity_info_callback)
     {

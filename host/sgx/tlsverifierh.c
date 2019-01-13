@@ -61,35 +61,12 @@ done:
     return result;
 }
 
-// static void get_and_decode_ext
-// (
-//  const X509* crt,
-//  const unsigned char* oid,
-//  int oid_len,
-//  unsigned char* data,
-//  int data_max_len,
-//  unsigned int* data_len
-// )
-// {
-//     const unsigned char* ext;
-//     int ext_len;
-    
-//     get_extension(crt, oid, oid_len, &ext, &ext_len);
-//     assert(ext_len * 3 <= data_max_len * 4);
-//     int ret = EVP_DecodeBlock_wrapper(data, ext, ext_len);
-    
-//     assert(ret != -1);
-//     *data_len = ret;
-// }
-
 // #define OID(N) {0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF8, 0x4D, 0x8A, 0x39, (N)}
-
 // const uint8_t ias_response_body_oid[]    = OID(0x02);
 // const uint8_t ias_root_cert_oid[]        = OID(0x03);
 // const uint8_t ias_leaf_cert_oid[]        = OID(0x04);
 // const uint8_t ias_report_signature_oid[] = OID(0x05);
 
-// const size_t ias_oid_len = sizeof(ias_response_body_oid);
 static oe_result_t extract_x509_report_extension
 (
     const X509* crt,
@@ -128,6 +105,36 @@ static oe_result_t extract_x509_report_extension
 done:
     return result;
 }
+
+// TODO: move this to shared library
+// verify report data against peer certificate
+// oe_result_t verify_report_data(mbedtls_x509_crt* crt, uint8_t*  report_data)
+// {
+//     #define PUBLIC_KEY_SIZE     512
+//     #define SHA256_DIGEST_SIZE  32
+//     oe_result_t result = OE_FAILURE;
+//     int ret = 0;
+//     uint8_t pk_buf[PUBLIC_KEY_SIZE];
+//     uint8_t sha256[SHA256_DIGEST_SIZE];
+
+//     oe_memset(pk_buf, 0, sizeof(pk_buf));
+//     ret  = mbedtls_pk_write_pubkey_pem(&crt->pk, pk_buf, sizeof(pk_buf));
+//     if (ret)
+//         OE_RAISE_MSG(OE_FAILURE, "ret = %d", ret);
+
+//     oe_memset(sha256, 0, SHA256_DIGEST_SIZE);
+//     mbedtls_sha256_ret(pk_buf, sizeof(pk_buf), sha256, 0);
+
+//     if (oe_memcmp(report_data, sha256, SHA256_DIGEST_SIZE) != 0)
+//     {
+//        OE_RAISE_MSG(OE_VERIFY_FAILED, "hash of peer certificate's public key does not match report data", NULL);
+//     }
+
+//     result = OE_OK;
+// done:
+//     return result;
+// return OE_OK;
+// }
 
 oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len, 
                                 tls_cert_verify_callback_t verify_enclave_identity_info_callback)
@@ -184,6 +191,11 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len,
     //                       &quote);
     // ret = verify_report_data_against_server_cert(cert, &quote);
     // assert(ret == 0);
+
+    // verify report data against peer certificate
+    // result = verify_report_data(&crt, parsed_report.report_data);
+    // OE_CHECK(result);
+    // OE_TRACE_INFO("verify_report_data passed", NULL);
 
 done:
     if (cert)

@@ -107,7 +107,12 @@ int main(int argc, const char* argv[])
     result = oe_verify_tls_cert(cert, cert_size, enclave_identity_verifier);
     printf("Verifying SGX certificate extensions from host ... %s\n", result == OE_OK ? "Success" : "Fail");
 
+    printf("free cert 0xx%p\n", cert);
+
     free(cert);
+    printf("done\n");
+
+
     // result = free_TLS_cert(enclave, cert, cert_size);
     // if (result != OE_OK)
     //     oe_put_err("free_TLS_cert() failed: result=%u", result);

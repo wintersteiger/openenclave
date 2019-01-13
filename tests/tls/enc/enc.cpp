@@ -68,6 +68,46 @@ oe_result_t enclave_identity_verifier(oe_report_t* parsed_report)
     return OE_OK;
 }
 
+// input: input_data and input_data_len
+// output: key, key_size
+oe_result_t generate_key_pair(  uint8_t** public_key,
+                                size_t *public_key_size,
+                                uint8_t** private_key,
+                                size_t *private_key_size)
+{
+    oe_result_t result = OE_FAILURE;
+    oe_asymmetric_key_params_t params;
+    char user_data[] = "test user data!";   
+    size_t user_data_size = sizeof(user_data) - 1;
+
+    OE_TRACE_INFO("Generate key pair");
+
+    params.type = OE_ASYMMETRIC_KEY_EC_SECP256P1;  // MBEDTLS_ECP_DP_SECP256R1
+    params.format = OE_ASYMMETRIC_KEY_PEM;
+    params.user_data = user_data;
+    params.user_data_size = user_data_size;
+    result = oe_get_public_key_by_policy(
+            OE_SEAL_POLICY_UNIQUE,
+            &params,
+            public_key,
+            public_key_size,
+            NULL,
+            NULL);
+    OE_CHECK(result);
+
+    result = oe_get_private_key_by_policy(
+            OE_SEAL_POLICY_UNIQUE,
+            &params,
+            private_key,
+            private_key_size,
+            NULL,
+            NULL);
+    OE_CHECK(result);
+
+done:
+    return result;
+}
+
 oe_result_t get_TLS_cert(unsigned char** cert, size_t *cert_size)
 {
     oe_result_t result = OE_FAILURE;
@@ -75,23 +115,43 @@ oe_result_t get_TLS_cert(unsigned char** cert, size_t *cert_size)
 
     uint8_t* output_cert = NULL;
     size_t output_cert_size = 0;
+
     uint8_t* private_key = NULL;
     size_t private_key_size = 0;
+    uint8_t* public_key = NULL;
+    size_t public_key_size = 0;
 
-
-    printf("called into onclave\n");
+    printf("called into enclave\n");
     fflush(stdout);
 
-    result = oe_gen_x509cert_for_TLS(OE_CERT_FORMAT_DER,
-                                     &output_cert,
-                                     &output_cert_size,
-                                     &private_key,
-                                     &private_key_size);
+    // generate public/private key pair
+    result = generate_key_pair( &public_key,
+                                &public_key_size,
+                                &private_key,
+                                &private_key_size);
     if (result != OE_OK)
     {
         printf(" failed with %s\n", oe_result_str(result));
         goto done;
     }
+
+    result = oe_gen_x509cert_for_TLS(private_key,
+                                     private_key_size,
+                                     public_key,
+                                     public_key_size,
+                                     &output_cert,
+                                     &output_cert_size);
+    if (result != OE_OK)
+    {
+        printf(" failed with %s\n", oe_result_str(result));
+        goto done;
+    }
+
+    OE_TRACE_INFO("output_cert_size = 0x%x", output_cert_size);
+    // validate cert inside the enclave
+    result = oe_verify_tls_cert(output_cert, output_cert_size, enclave_identity_verifier);
+    printf("\nVerifying SGX certificate extensions from enclave ... %s\n", result == OE_OK ? "Success" : "Fail");
+
     // copy cert to host memory
     host_cert_buf = (uint8_t*)oe_host_malloc(output_cert_size);
     if (host_cert_buf == NULL)
@@ -99,24 +159,22 @@ oe_result_t get_TLS_cert(unsigned char** cert, size_t *cert_size)
         result = OE_OUT_OF_MEMORY;
         goto done;
     }
-    OE_TRACE_INFO("*cert = %p", *cert);
+
+    // copy to the host for host-side validation test
     memcpy(host_cert_buf, output_cert,  output_cert_size);
     *cert_size = output_cert_size;
     *cert = host_cert_buf;
     OE_TRACE_INFO("*cert = %p", *cert);
     OE_TRACE_INFO("*cert_size = 0x%x", *cert_size);
 
-    // validate cert
-    result = oe_verify_tls_cert(output_cert, output_cert_size, enclave_identity_verifier);
-    printf("Verifying SGX certificate extensions from enclave ... %s\n", result == OE_OK ? "Success" : "Fail");
-
-    // we really dont use private key in this routine
-    oe_free_key(private_key, private_key_size, NULL, 0);
-
 done:
-    //oe_free_x509cert_for_TLS(output_cert, output_cert_size);
+ 
+    if (private_key)
+        oe_free_key(private_key, private_key_size, NULL, 0);
+    if (public_key)
+    oe_free_key(public_key, public_key_size, NULL, 0);
 
-    OE_TRACE_INFO("test from tls enclave");
+    // free certificate buffer
     if (output_cert)
         free(output_cert);
 
