@@ -5,8 +5,9 @@
 #include <stdlib.h>
 #include <string>
 
-oe_result_t enclave_identity_verifier_callback(oe_identity_t* identity)
+oe_result_t enclave_identity_verifier_callback(oe_identity_t* identity, void *arg)
 {
+    (void)arg;
     printf("enclave_identity_verifier_callback is called with parsed report:\n");
 
     // Check the enclave's security version

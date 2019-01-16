@@ -10,10 +10,11 @@
 #include <string.h>
 #include "tls_u.h"
 
-oe_result_t enclave_identity_verifier(oe_identity_t* identity)
+oe_result_t enclave_identity_verifier(oe_identity_t* identity, void* arg)
 {
     oe_result_t result = OE_VERIFY_FAILED;
 
+    (void)arg;
     printf("enclave_identity_verifier is called with parsed report:\n");
 
     // Check the enclave's security version
@@ -90,7 +91,7 @@ int main(int argc, const char* argv[])
     }
 
     // validate cert
-    result = oe_verify_tls_cert(cert, cert_size, enclave_identity_verifier);
+    result = oe_verify_tls_cert(cert, cert_size, enclave_identity_verifier, NULL);
     printf("Verifying SGX certificate extensions from host ... %s\n", result == OE_OK ? "Success" : "Fail");
 
     printf("free cert 0xx%p\n", cert);

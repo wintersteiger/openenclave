@@ -864,9 +864,9 @@ oe_result_t oe_gen_x509cert_for_TLS(uint8_t* issuer_key,
 void oe_free_x509cert_for_TLS(uint8_t* cert);
 
 
-typedef  oe_result_t (*oe_enclave_identity_verify_callback_t)(oe_identity_t* identity);
+typedef  oe_result_t (*oe_enclave_identity_verify_callback_t)(oe_identity_t* identity, void *arg);
 oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len,
-                                oe_enclave_identity_verify_callback_t enclave_identity_callback);
+                                oe_enclave_identity_verify_callback_t enclave_identity_callback, void *arg);
 OE_EXTERNC_END
 
 #endif /* _OE_ENCLAVE_H */

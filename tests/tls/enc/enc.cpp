@@ -13,10 +13,11 @@
 #include <string.h>
 #define UNREFERENCE(x) (void(x)) // Prevent unused warning
 
-oe_result_t enclave_identity_verifier(oe_identity_t* identity)
+oe_result_t enclave_identity_verifier(oe_identity_t* identity, void *arg)
 {
     oe_result_t result = OE_VERIFY_FAILED;
 
+    (void)arg;
     printf("enclave_identity_verifier is called with parsed report:\n");
 
     // Check the enclave's security version
@@ -136,7 +137,7 @@ oe_result_t get_TLS_cert(unsigned char** cert, size_t *cert_size)
 
     OE_TRACE_INFO("output_cert_size = 0x%x", output_cert_size);
     // validate cert inside the enclave
-    result = oe_verify_tls_cert(output_cert, output_cert_size, enclave_identity_verifier);
+    result = oe_verify_tls_cert(output_cert, output_cert_size, enclave_identity_verifier, NULL);
     printf("\nVerifying SGX certificate extensions from enclave ... %s\n", result == OE_OK ? "Success" : "Fail");
 
     // copy cert to host memory

@@ -19,7 +19,7 @@
 #include <mbedtls/ssl_cache.h>  // Enable simple SSL cache implementation (MBEDTLS_SSL_CACHE_C)
 #include "../../common/utility.h"
 
-oe_result_t enclave_identity_verifier_callback(oe_identity_t *identity);
+oe_result_t enclave_identity_verifier_callback(oe_identity_t *identity, void* arg);
 
 extern "C" {
 	int setup_tls_server(char* server_port);
@@ -71,7 +71,7 @@ static int cert_verify_callback(void *data, mbedtls_x509_crt *crt, int depth, ui
     if (cert_size <= 0)
 		goto exit;
 
-    result = oe_verify_tls_cert(cert_buf, cert_size, enclave_identity_verifier_callback);
+    result = oe_verify_tls_cert(cert_buf, cert_size, enclave_identity_verifier_callback, NULL);
 	if (result != OE_OK)
 	{
 		mbedtls_printf("oe_verify_tls_cert failed with result = %s\n", oe_result_str(result));	

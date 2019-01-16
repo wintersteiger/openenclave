@@ -1,15 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#if !defined(MBEDTLS_CONFIG_FILE)
-#include "mbedtls/config.h"
-#else
-#include MBEDTLS_CONFIG_FILE
-#endif
-
 #include <openenclave/enclave.h>
-
-// headers for mbedtls
 #include <mbedtls/platform.h>
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/debug.h>
@@ -22,15 +14,13 @@
 #include <string.h>
 #include "../../common/utility.h"
 
-#define GET_REQUEST "GET / HTTP/1.0\r\n\r\n"
-
-#define DEBUG_LEVEL 1
-
-oe_result_t enclave_identity_verifier_callback(oe_identity_t* identity);
-
 extern "C" {
 	int launch_tls_client(char* server_name, char* server_port);
 };
+oe_result_t enclave_identity_verifier_callback(oe_identity_t* identity, void *arg);
+
+#define GET_REQUEST "GET / HTTP/1.0\r\n\r\n"
+#define DEBUG_LEVEL 1
 
 static void my_debug(void *ctx, int level,
 	const char *file, int line,
@@ -66,7 +56,7 @@ static int cert_verify_callback(void *data, mbedtls_x509_crt *crt, int depth, ui
     if (cert_size <= 0)
 		goto exit;
 
-    result = oe_verify_tls_cert(cert_buf, cert_size, enclave_identity_verifier_callback);
+    result = oe_verify_tls_cert(cert_buf, cert_size, enclave_identity_verifier_callback, NULL);
 	if (result != OE_OK)
 	{
 		mbedtls_printf("oe_verify_tls_cert failed with result = %s\n", oe_result_str(result));	

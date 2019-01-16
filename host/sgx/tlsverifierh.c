@@ -196,8 +196,10 @@ done:
 
     return result;
 }
-oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len, 
-                                oe_enclave_identity_verify_callback_t enclave_identity_callback)
+oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der,
+                                size_t cert_in_der_len,
+                                oe_enclave_identity_verify_callback_t enclave_identity_callback,
+                                void *arg)
 {
     oe_result_t result = OE_FAILURE;
     const unsigned char* p = cert_in_der;
@@ -254,7 +256,7 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der, size_t cert_in_der_len,
     // --------------------------------------
     if (enclave_identity_callback)
     {
-        result = enclave_identity_callback(&parsed_report.identity);
+        result = enclave_identity_callback(&parsed_report.identity, arg);
         OE_CHECK(result);
         OE_TRACE_INFO("enclave_identity_callback() succeeded");
     }
