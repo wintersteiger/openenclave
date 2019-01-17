@@ -6,6 +6,8 @@
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
 #include <openenclave/internal/enclavelibc.h>
+#include <openenclave/internal/sha.h>
+#include "../common/common.h"
 
 // Using mbedtls to create an extended X.509 certificate
 #include <mbedtls/entropy.h>
@@ -19,9 +21,7 @@
 #include <mbedtls/sha256.h>
 #include <mbedtls/x509_crt.h>
 
-#define PUBLIC_KEY_SIZE     512
-#define SHA256_DIGEST_SIZE  32
-
+// need to define a new report OID
 static unsigned char oid_oe_report[] = {0x2A, 0x86, 0x48, 0x86, 0xF8, 0x4D, 0x8A, 0x39, 0x01};
 static int _extract_x509_extension
 (   uint8_t* ext3_data,
@@ -110,57 +110,32 @@ done:
     return result;
 }
 
-static int Sha256(const uint8_t* data, size_t data_size, uint8_t sha256[32])
-{
-    int ret = 0;
-    mbedtls_sha256_context ctx;
-
-    mbedtls_sha256_init(&ctx);
-
-    ret = mbedtls_sha256_starts_ret(&ctx, 0);
-    if (ret)
-        goto exit;
-
-    ret = mbedtls_sha256_update_ret(&ctx, data, data_size);
-    if (ret)
-        goto exit;
-
-    ret = mbedtls_sha256_finish_ret(&ctx, sha256);
-    if (ret)
-        goto exit;
-
-exit:
-    mbedtls_sha256_free(&ctx);
-    return ret;
-}
-
 // verify report data against peer certificate
 oe_result_t verify_report_user_data(mbedtls_x509_crt* crt, uint8_t*  report_data)
 {
     oe_result_t result = OE_FAILURE;
     int ret = 0;
-    uint8_t pk_buf[PUBLIC_KEY_SIZE];
-    uint8_t sha256[SHA256_DIGEST_SIZE];
+    uint8_t pk_buf[OE_RSA_KEY_BUFF_SIZE];
+    oe_sha256_context_t sha256_ctx = {0};
+    OE_SHA256 sha256;
 
     oe_memset(pk_buf, 0, sizeof(pk_buf));
     ret  = mbedtls_pk_write_pubkey_pem(&crt->pk, pk_buf, sizeof(pk_buf));
     if (ret)
         OE_RAISE_MSG(OE_FAILURE, "ret = %d", ret);
 
-    oe_memset(sha256, 0, SHA256_DIGEST_SIZE);
-    Sha256(pk_buf, sizeof(pk_buf), sha256);
-
     OE_TRACE_VERBOSE("public key from the peer certificate =\n[%s]", pk_buf);
-    for (size_t i=0; i<sizeof(sha256); i++)
-    {
-        OE_TRACE_VERBOSE("sha256[%d]=0x%x", i, sha256[i]);
-    }
 
-    // validate report's user data which contains hash(public key)
-    if (oe_memcmp(report_data, sha256, SHA256_DIGEST_SIZE) != 0)
+    oe_memset(sha256.buf, 0, OE_SHA256_SIZE);
+    OE_CHECK(oe_sha256_init(&sha256_ctx));
+    OE_CHECK(oe_sha256_update(&sha256_ctx, pk_buf, sizeof(pk_buf)));
+    OE_CHECK(oe_sha256_final(&sha256_ctx, &sha256));
+
+    // validate report's user data, which contains hash(public key)
+    if (oe_memcmp(report_data, (uint8_t*)&sha256, OE_SHA256_SIZE) != 0)
     {
-        for (int i=0; i<SHA256_DIGEST_SIZE; i++)
-            OE_TRACE_ERROR("[%d] report_data[0x%x] sha256=0x%x ", i, report_data[i], sha256[i]);
+        for (int i=0; i<OE_SHA256_SIZE; i++)
+            OE_TRACE_VERBOSE("[%d] report_data[0x%x] sha256=0x%x ", i, report_data[i], sha256.buf[i]);
         OE_RAISE_MSG(OE_VERIFY_FAILED, "hash of peer certificate's public key does not match report data", NULL);
     }
 

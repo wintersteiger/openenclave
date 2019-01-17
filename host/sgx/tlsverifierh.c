@@ -8,16 +8,13 @@
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/report.h>
 #include <openenclave/internal/utils.h>
+#include "../common/common.h"
 
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
-
-#define PUBLIC_KEY_SIZE     512
-#define SHA256_DIGEST_SIZE  32
-
 
 // TODO: move this to shared library
 // verify report data against peer certificate
@@ -128,10 +125,10 @@ oe_result_t verify_report_user_data(uint8_t *key_buff, uint8_t*  report_data)
     oe_sha256_context_t sha256_ctx = {0};
 
     OE_CHECK(oe_sha256_init(&sha256_ctx));
-    OE_CHECK(oe_sha256_update(&sha256_ctx, key_buff, PUBLIC_KEY_SIZE));
+    OE_CHECK(oe_sha256_update(&sha256_ctx, key_buff, OE_RSA_KEY_BUFF_SIZE));
     OE_CHECK(oe_sha256_final(&sha256_ctx, &sha256));
 
-    if (memcmp(report_data, (uint8_t*)&sha256, SHA256_DIGEST_SIZE) != 0)
+    if (memcmp(report_data, (uint8_t*)&sha256, OE_SHA256_SIZE) != 0)
     {
        OE_RAISE_MSG(OE_VERIFY_FAILED, "hash of peer certificate's public key does not match report data", NULL);
     }
@@ -206,7 +203,7 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der,
     X509* cert = NULL;
     uint8_t* report = NULL;
     size_t report_size = 0;
-    uint8_t pub_key_buf[PUBLIC_KEY_SIZE];
+    uint8_t pub_key_buf[OE_RSA_KEY_BUFF_SIZE];
     size_t pub_key_buf_size = 0;
     oe_report_t parsed_report = {0};
 

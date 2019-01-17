@@ -7,7 +7,7 @@
 #include <openenclave/internal/report.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/utils.h>
-
+#include <openenclave/internal/sha.h>
 #include <openenclave/internal/enclavelibc.h>
 #include "../common/common.h"
 #include <openenclave/internal/print.h>
@@ -27,64 +27,38 @@
 
 #define MAX_CERT_SIZE 8*1024
 #define UNREFERENCED(x) (void(x)) // Prevent unused warning
-#define PUBLIC_KEY_SIZE     512
-#define SHA256_DIGEST_SIZE   32
 
 static unsigned char _cert_buf[MAX_CERT_SIZE] = {0, };
 
-
-int Sha256(const uint8_t* data, size_t data_size, uint8_t sha256[32])
-{
-    int ret = 0;
-    mbedtls_sha256_context ctx;
-
-    mbedtls_sha256_init(&ctx);
-
-    ret = mbedtls_sha256_starts_ret(&ctx, 0);
-    if (ret)
-        goto exit;
-
-    ret = mbedtls_sha256_update_ret(&ctx, data, data_size);
-    if (ret)
-        goto exit;
-
-    ret = mbedtls_sha256_finish_ret(&ctx, sha256);
-    if (ret)
-        goto exit;
-
-exit:
-    mbedtls_sha256_free(&ctx);
-    return ret;
-}
-
 void sha256_rsa_pubkey( mbedtls_pk_context* pubkey,
-                        uint8_t sha256[SHA256_DIGEST_SIZE])
+                        OE_SHA256 *sha256)
 {
+    oe_result_t result = OE_FAILURE;
     int ret = 0;
-    uint8_t key_buf[PUBLIC_KEY_SIZE];
+    uint8_t key_buf[OE_RSA_KEY_BUFF_SIZE];
+    oe_sha256_context_t sha256_ctx = {0};
 
     // Write a public key to a PEM string for exchanging with other enclaves
-    oe_memset(key_buf, 0, PUBLIC_KEY_SIZE);
+    oe_memset(key_buf, 0, OE_RSA_KEY_BUFF_SIZE);
     ret = mbedtls_pk_write_pubkey_pem(pubkey, key_buf, sizeof(key_buf));
     if (ret != 0)
     {
         OE_TRACE_ERROR("ret = %d\n", ret);
-        goto exit;
+        goto done;
     }
     OE_TRACE_VERBOSE("public key from the quote =\n[%s]", key_buf);
 
     // calculates the SHA-256 checksum of sha256_buf buffer.
-    oe_memset(sha256, 0, SHA256_DIGEST_SIZE);
-    Sha256(key_buf, sizeof(key_buf), sha256);
+    oe_memset(sha256->buf, 0, OE_SHA256_SIZE);
+    OE_CHECK(oe_sha256_init(&sha256_ctx));
+    OE_CHECK(oe_sha256_update(&sha256_ctx, key_buf, sizeof(key_buf)));
+    OE_CHECK(oe_sha256_final(&sha256_ctx, sha256));
 
-    for (size_t i=0; i<SHA256_DIGEST_SIZE; i++)
-    {
-        OE_TRACE_VERBOSE("sha256[%d]=0x%x", i, sha256[i]);
-    }
-exit:
+    for (size_t i=0; i<OE_SHA256_SIZE; i++)
+        OE_TRACE_VERBOSE("sha256[%d]=0x%x", i, sha256->buf[i]);
+done:
     return;
 }
-
 
 // Input: an issuer and subject key pair
 // Output: a self-signed certificate
@@ -99,8 +73,8 @@ oe_result_t generate_x509_cert( uint8_t*issuer_key_buf,
     uint8_t* remote_report_buf = NULL;
     size_t remote_report_buf_size = OE_MAX_REPORT_SIZE;
     mbedtls_mpi serial;
-    //OE_SHA256 sha256 = {0};
-    uint8_t sha256[SHA256_DIGEST_SIZE];
+    OE_SHA256 sha256 = {0};
+
     mbedtls_x509write_cert x509cert = { 0 };
     mbedtls_pk_context subject_key;
     mbedtls_pk_context issuer_key;
@@ -133,25 +107,15 @@ oe_result_t generate_x509_cert( uint8_t*issuer_key_buf,
     //
 
     // generate the hash for the certificate's public (subject) key for use as report data
-    sha256_rsa_pubkey(&subject_key, sha256);
+    sha256_rsa_pubkey(&subject_key, &sha256);
     OE_TRACE_VERBOSE("Report data with hash of public key:");
-    for (size_t i=0; i<SHA256_DIGEST_SIZE; i++)
-    {
-        OE_TRACE_VERBOSE("Report data with hash of public key[%d]=0x%x", i, sha256[i]);
-    }
-
-    // Generate a remote report for the public key so that the enclave that
-    // receives the key can attest this enclave.
-    // remote_report_buf = (uint8_t*)oe_malloc(OE_MAX_REPORT_SIZE);
-    // if (remote_report_buf == NULL)
-    // {
-    //     goto done;
-    // }
+    for (size_t i=0; i<OE_SHA256_SIZE; i++)
+        OE_TRACE_VERBOSE("Report data with hash of public key[%d]=0x%x", i, sha256.buf[i]);
 
     result = oe_get_report(
         OE_REPORT_FLAGS_REMOTE_ATTESTATION,
-        sha256,
-        SHA256_DIGEST_SIZE,
+        (const uint8_t*)&sha256,
+        OE_SHA256_SIZE,
         NULL,
         0,
         &remote_report_buf,
@@ -169,13 +133,11 @@ oe_result_t generate_x509_cert( uint8_t*issuer_key_buf,
     // Set the subject name for a Certificate Subject names should contain a comma-separated list of OID types and values:
     // e.g. "C=UK,O=ARM,CN=mbed TLS Server 1"
 
-// Consider set CN with enclave's MRENCLAVE values
-
+    // Todo: consider set CN with enclave's MRENCLAVE values
     ret = mbedtls_x509write_crt_set_subject_name(&x509cert, "CN=Open Encalve SDK,O=OESDK TLS,C=UK");
     if (ret)
         OE_RAISE_MSG(OE_FAILURE, "ret = 0x%x ", ret);
 
-    //assert(ret == 0);
     ret = mbedtls_x509write_crt_set_issuer_name(&x509cert, "CN=Open Encalve SDK,O=OESDK TLS,C=UK");
     if (ret)
         OE_RAISE_MSG(OE_FAILURE, "ret = 0x%x ", ret);
@@ -237,7 +199,6 @@ oe_result_t generate_x509_cert( uint8_t*issuer_key_buf,
     // Write a built up certificate to a X509 DER structure Note: data
     // is written at the end of the buffer! Use the return value to
     // determine where you should start using the buffer.
-
     bytes_written = (size_t)mbedtls_x509write_crt_der(&x509cert, _cert_buf, MAX_CERT_SIZE,
                                                 mbedtls_ctr_drbg_random, &ctr_drbg);
     OE_TRACE_INFO("bytes_written = 0x%x", bytes_written);
