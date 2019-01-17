@@ -47,11 +47,9 @@ genkey: public.pem
 build:
 	@ echo "Compilers used: $(CC), $(CXX)"
 	oeedger8r ../tls_server.edl --trusted --trusted-dir .
-#	$(CXX) -g -c $(CXXFLAGS) $(INCLUDES) -std=c++11 ecalls.cpp server.cpp ../common/attestation.cpp ../common/crypto.cpp ../common/dispatcher.cpp
-	$(CXX) -g -c $(CXXFLAGS) $(INCLUDES) -std=c++11 ecalls.cpp server.cpp verifiers.cpp crypto.cpp ../../common/utility.cpp
+	$(CXX) -g -c $(CXXFLAGS) $(INCLUDES) -std=c++11 ecalls.cpp server.cpp verifier_server.cpp crypto.cpp ../../common/utility.cpp
 	$(CC) -c $(CFLAGS) $(CINCLUDES) tls_server_t.c
-#	$(CXX) -o tls_server_enc attestation.o crypto.o ecalls.o server.o dispatcher.o tls_server_t.o $(LDFLAGS) -lmbedtls -lmbedcrypto -loesocket_enc
-	$(CXX) -o tls_server_enc ecalls.o server.o verifiers.o crypto.o utility.o tls_server_t.o $(LDFLAGS) -lmbedtls -lmbedcrypto -loesocket_enc
+	$(CXX) -o tls_server_enc ecalls.o server.o verifier_server.o crypto.o utility.o tls_server_t.o $(LDFLAGS) -lmbedtls -lmbedcrypto -loesocket_enc
 
 sign:
 	oesign sign tls_server_enc enc.conf private.pem

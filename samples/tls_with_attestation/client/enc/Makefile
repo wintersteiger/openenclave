@@ -47,13 +47,12 @@ genkey: public.pem
 build:
 	@ echo "Compilers used: $(CC), $(CXX)"
 	oeedger8r ../tls_client.edl --trusted --trusted-dir .
-	$(CXX) -g -c $(CXXFLAGS) $(INCLUDES) -std=c++11 ecalls.cpp client.cpp verifier.cpp ../../common/utility.cpp crypto.cpp 
-#	$(CXX) -g -c $(CXXFLAGS) $(INCLUDES) -std=c++11 ecalls.cpp client.cpp verifier.cpp ../../common/utility.cpp
+	$(CXX) -g -c $(CXXFLAGS) $(INCLUDES) -std=c++11 ecalls.cpp client.cpp verifier_client.cpp ../../common/utility.cpp crypto.cpp 
 	$(CC) -c $(CFLAGS) $(CINCLUDES) ./tls_client_t.c
-	$(CXX) -o tls_client_enclave ecalls.o crypto.o client.o verifier.o utility.o tls_client_t.o $(LDFLAGS) -lmbedtls -lmbedcrypto -loesocket_enc
+	$(CXX) -o tls_client_enclave ecalls.o crypto.o client.o verifier_client.o utility.o tls_client_t.o $(LDFLAGS) -lmbedtls -lmbedcrypto -loesocket_enc
 
 sign:
 	oesign sign tls_client_enclave enc.conf private.pem
 
 clean:
-	rm -f *.o tls_client_enclave tls_client_enclave.signed client.o  enclave1.signed.so tls_client_t.* tls_client_args.h *.pem ../../common/tls_client_enc_pubkey.h
+	rm -f ./*.o tls_client_enclave tls_client_enclave.signed enclave1.signed.so tls_client_t.* tls_client_args.h *.pem ../../common/tls_client_enc_pubkey.h

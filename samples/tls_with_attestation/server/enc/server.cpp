@@ -94,7 +94,6 @@ int configure_server_ssl(mbedtls_ssl_context *ssl,
 	oe_result_t result = OE_FAILURE;
 
 	mbedtls_printf("Generating the certificate and private key\n");
-
 	result = generate_certificate_and_pkey(server_cert, pkey);
     if (result != OE_OK)
     {
@@ -104,7 +103,6 @@ int configure_server_ssl(mbedtls_ssl_context *ssl,
     }
 
 	mbedtls_printf("Setting up the SSL configuration....\n");
-
 	if ((ret = mbedtls_ssl_config_defaults(conf,
 									MBEDTLS_SSL_IS_SERVER,
 									MBEDTLS_SSL_TRANSPORT_STREAM,
@@ -118,13 +116,9 @@ int configure_server_ssl(mbedtls_ssl_context *ssl,
 	mbedtls_ssl_conf_dbg(conf, my_debug, stdout);
 	mbedtls_ssl_conf_session_cache(conf, cache, mbedtls_ssl_cache_get, mbedtls_ssl_cache_set);
 
-	//mbedtls_ssl_conf_authmode(conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
-	mbedtls_ssl_conf_authmode(conf, MBEDTLS_SSL_VERIFY_NONE);
-
+	// need to set authmode mode to OPTIONAL for requesting client certificate
+	mbedtls_ssl_conf_authmode(conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
 	mbedtls_ssl_conf_verify(conf, cert_verify_callback, NULL);
-
-	// enable TLS server to send a list of acceptable CAs in CertificateRequest messages.
-    // mbedtls_ssl_conf_cert_req_ca_list( &conf, MBEDTLS_SSL_CERT_REQ_CA_LIST_ENABLED);
 	mbedtls_ssl_conf_ca_chain(conf, server_cert->next, NULL);
 
 	if ((ret = mbedtls_ssl_conf_own_cert(conf, server_cert, pkey)) != 0)
@@ -224,8 +218,6 @@ waiting_for_connection_request:
 		mbedtls_printf("%s\n", errbuf);
 		goto exit;
 	}
-
-	// TODO: dump active TLS parameters used here
 	mbedtls_printf("mbedtls_net_accept returned successfully.(listen_fd = %d) (client_fd = %d) \n", listen_fd.fd, client_fd.fd);
 
 	// set up bio callbacks
@@ -329,18 +321,14 @@ exit:
 		mbedtls_printf("Last error was: %d - %s\n\n", ret, error_buf);
 	}
 
-	// free sockets
+	// free resource
 	mbedtls_net_free(&client_fd);
 	mbedtls_net_free(&listen_fd);
-	// free certificate resource
 	mbedtls_x509_crt_free(&server_cert);
 	mbedtls_pk_free(&pkey);
-	// free ssl resource
 	mbedtls_ssl_free(&ssl);
 	mbedtls_ssl_config_free(&conf);
-#if defined(MBEDTLS_SSL_CACHE_C)
 	mbedtls_ssl_cache_free(&cache);
-#endif
 	mbedtls_ctr_drbg_free(&ctr_drbg);
 	mbedtls_entropy_free(&entropy);
 	fflush(stdout);

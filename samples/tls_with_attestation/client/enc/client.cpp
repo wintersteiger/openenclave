@@ -112,8 +112,8 @@ int configure_client_ssl(mbedtls_ssl_context *ssl,
 	// MBEDTLS_SSL_VERIFY_REQUIRED: peer must present a valid certificate, handshake is aborted if
 	//                              verification failed. (default on client)
 
-	//mbedtls_ssl_conf_authmode(conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
-	mbedtls_ssl_conf_authmode(conf, MBEDTLS_SSL_VERIFY_NONE);
+	mbedtls_ssl_conf_authmode(conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+	//mbedtls_ssl_conf_authmode(conf, MBEDTLS_SSL_VERIFY_NONE);
 	
 	mbedtls_ssl_conf_verify(conf, cert_verify_callback, NULL);
 
