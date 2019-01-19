@@ -18,7 +18,7 @@
 
 // TODO: move this to shared library
 // verify report data against peer certificate
-oe_result_t verify_report_user_data(uint8_t *key_buff, uint8_t*  report_data);
+oe_result_t verify_report_user_data(uint8_t *key_buff, size_t key_buff_size, uint8_t*  report_data);
 oe_result_t get_public_key_from_cert(X509* cert, uint8_t *key_buff, size_t *key_size);
 oe_result_t verify_cert(X509 *cert);
 
@@ -70,12 +70,6 @@ done:
     return result;
 }
 
-// #define OID(N) {0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF8, 0x4D, 0x8A, 0x39, (N)}
-// const uint8_t ias_response_body_oid[]    = OID(0x02);
-// const uint8_t ias_root_cert_oid[]        = OID(0x03);
-// const uint8_t ias_leaf_cert_oid[]        = OID(0x04);
-// const uint8_t ias_report_signature_oid[] = OID(0x05);
-
 static oe_result_t extract_x509_report_extension
 (
     const X509* crt,
@@ -84,7 +78,6 @@ static oe_result_t extract_x509_report_extension
 )
 {   
     oe_result_t result = OE_FAILURE;
-
     result = get_extension(crt, oid_oe_report, sizeof(oid_oe_report), ext_data, ext_data_size);
     OE_CHECK(result);
 
@@ -118,14 +111,14 @@ done:
     return result;
 }
 
-oe_result_t verify_report_user_data(uint8_t *key_buff, uint8_t*  report_data)
+oe_result_t verify_report_user_data(uint8_t *key_buff, size_t key_buff_size, uint8_t*  report_data)
 {
     oe_result_t result = OE_FAILURE;
     OE_SHA256 sha256;
     oe_sha256_context_t sha256_ctx = {0};
 
     OE_CHECK(oe_sha256_init(&sha256_ctx));
-    OE_CHECK(oe_sha256_update(&sha256_ctx, key_buff, OE_RSA_KEY_BUFF_SIZE));
+    OE_CHECK(oe_sha256_update(&sha256_ctx, key_buff, key_buff_size));
     OE_CHECK(oe_sha256_final(&sha256_ctx, &sha256));
 
     if (memcmp(report_data, (uint8_t*)&sha256, OE_SHA256_SIZE) != 0)
@@ -244,7 +237,7 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der,
     OE_CHECK(result);
 
     // verify report data against peer certificate
-    result = verify_report_user_data(pub_key_buf, parsed_report.report_data);
+    result = verify_report_user_data(pub_key_buf, pub_key_buf_size, parsed_report.report_data);
     OE_CHECK(result);
     OE_TRACE_INFO("verify_report_user_data passed", NULL);
 

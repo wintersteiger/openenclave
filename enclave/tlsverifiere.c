@@ -124,11 +124,13 @@ oe_result_t verify_report_user_data(mbedtls_x509_crt* crt, uint8_t*  report_data
     if (ret)
         OE_RAISE_MSG(OE_FAILURE, "ret = %d", ret);
 
-    OE_TRACE_VERBOSE("public key from the peer certificate =\n[%s]", pk_buf);
+    OE_TRACE_INFO("pk_buf=[%s]",pk_buf);
+    OE_TRACE_INFO("strlen(pk_buf)=[%d]",strlen((const char *)pk_buf));
 
+    OE_TRACE_VERBOSE("public key from the peer certificate =\n[%s]", pk_buf);
     oe_memset(sha256.buf, 0, OE_SHA256_SIZE);
     OE_CHECK(oe_sha256_init(&sha256_ctx));
-    OE_CHECK(oe_sha256_update(&sha256_ctx, pk_buf, sizeof(pk_buf)));
+    OE_CHECK(oe_sha256_update(&sha256_ctx, pk_buf, strlen((const char *)pk_buf)+1)); // +1 for the ending null char
     OE_CHECK(oe_sha256_final(&sha256_ctx, &sha256));
 
     // validate report's user data, which contains hash(public key)

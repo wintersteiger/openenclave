@@ -9,8 +9,11 @@
 #include <openenclave/internal/utils.h>
 #include <openenclave/internal/sha.h>
 #include <openenclave/internal/enclavelibc.h>
-#include "../common/common.h"
 #include <openenclave/internal/print.h>
+#include "../common/common.h"
+#include "key.h"
+#include "rsa.h"
+#include "ec.h"
 #include <stdio.h>
 
 // Using mbedtls to create an extended X.509 certificate
@@ -30,34 +33,22 @@
 
 static unsigned char _cert_buf[MAX_CERT_SIZE] = {0, };
 
-void sha256_rsa_pubkey( mbedtls_pk_context* pubkey,
-                        OE_SHA256 *sha256)
+oe_result_t calc_sha256(uint8_t*buf, size_t buf_size, OE_SHA256 *sha256)
 {
     oe_result_t result = OE_FAILURE;
-    int ret = 0;
-    uint8_t key_buf[OE_RSA_KEY_BUFF_SIZE];
     oe_sha256_context_t sha256_ctx = {0};
 
-    // Write a public key to a PEM string for exchanging with other enclaves
-    oe_memset(key_buf, 0, OE_RSA_KEY_BUFF_SIZE);
-    ret = mbedtls_pk_write_pubkey_pem(pubkey, key_buf, sizeof(key_buf));
-    if (ret != 0)
-    {
-        OE_TRACE_ERROR("ret = %d\n", ret);
-        goto done;
-    }
-    OE_TRACE_VERBOSE("public key from the quote =\n[%s]", key_buf);
-
-    // calculates the SHA-256 checksum of sha256_buf buffer.
     oe_memset(sha256->buf, 0, OE_SHA256_SIZE);
     OE_CHECK(oe_sha256_init(&sha256_ctx));
-    OE_CHECK(oe_sha256_update(&sha256_ctx, key_buf, sizeof(key_buf)));
+    OE_CHECK(oe_sha256_update(&sha256_ctx, buf, buf_size));
     OE_CHECK(oe_sha256_final(&sha256_ctx, sha256));
 
     for (size_t i=0; i<OE_SHA256_SIZE; i++)
         OE_TRACE_VERBOSE("sha256[%d]=0x%x", i, sha256->buf[i]);
+
+    result = OE_OK;
 done:
-    return;
+    return result;
 }
 
 // Input: an issuer and subject key pair
@@ -107,7 +98,8 @@ oe_result_t generate_x509_cert( uint8_t*issuer_key_buf,
     //
 
     // generate the hash for the certificate's public (subject) key for use as report data
-    sha256_rsa_pubkey(&subject_key, &sha256);
+    OE_TRACE_VERBOSE("subject_key_buf_size=%d", subject_key_buf_size);
+    calc_sha256(subject_key_buf, subject_key_buf_size, &sha256);
     OE_TRACE_VERBOSE("Report data with hash of public key:");
     for (size_t i=0; i<OE_SHA256_SIZE; i++)
         OE_TRACE_VERBOSE("Report data with hash of public key[%d]=0x%x", i, sha256.buf[i]);
