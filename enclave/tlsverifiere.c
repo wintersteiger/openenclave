@@ -7,6 +7,7 @@
 #include <openenclave/internal/utils.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/sha.h>
+#include <openenclave/internal/cert.h>
 #include "../common/common.h"
 
 // Using mbedtls to create an extended X.509 certificate
@@ -86,7 +87,7 @@ done:
 }
 
 static oe_result_t extract_x509_report_extension
-(   mbedtls_x509_crt *crt,
+(   mbedtls_x509_crt *cert,
     uint8_t** report_data,
     size_t* report_data_size
 )
@@ -94,8 +95,8 @@ static oe_result_t extract_x509_report_extension
     oe_result_t result = OE_FAILURE;
     int ret = 0;
 
-    ret = _extract_x509_extension(crt->v3_ext.p,
-                                crt->v3_ext.len,
+    ret = _extract_x509_extension(cert->v3_ext.p,
+                                cert->v3_ext.len,
                                 oid_oe_report,
                                 sizeof(oid_oe_report),
                                 report_data,
@@ -111,7 +112,7 @@ done:
 }
 
 // verify report data against peer certificate
-oe_result_t verify_report_user_data(mbedtls_x509_crt* crt, uint8_t*  report_data)
+oe_result_t verify_report_user_data(mbedtls_x509_crt* cert, uint8_t*  report_data)
 {
     oe_result_t result = OE_FAILURE;
     int ret = 0;
@@ -120,7 +121,7 @@ oe_result_t verify_report_user_data(mbedtls_x509_crt* crt, uint8_t*  report_data
     OE_SHA256 sha256;
 
     oe_memset(pk_buf, 0, sizeof(pk_buf));
-    ret  = mbedtls_pk_write_pubkey_pem(&crt->pk, pk_buf, sizeof(pk_buf));
+    ret  = mbedtls_pk_write_pubkey_pem(&cert->pk, pk_buf, sizeof(pk_buf));
     if (ret)
         OE_RAISE_MSG(OE_FAILURE, "ret = %d", ret);
 
@@ -147,15 +148,27 @@ done:
     return result;
 }
 
-oe_result_t verify_cert_signature( mbedtls_x509_crt *crt)
+oe_result_t verify_cert_signature( mbedtls_x509_crt *cert)
 {
     oe_result_t result = OE_FAILURE;
+    uint32_t flags = 0;
+    int ret = 0;
 
-    (void)crt;
-
-
+    ret = mbedtls_x509_crt_verify(cert, cert, NULL, NULL, &flags, NULL, NULL);
+    if (ret)
+    {
+        oe_verify_cert_error_t error;
+        mbedtls_x509_crt_verify_info(
+            error.buf, sizeof(error.buf), "", flags);
+        OE_RAISE_MSG(
+            OE_FAILURE,
+            "mbedtls_x509_crt_verify failed with %s (flags=0x%x)",
+            error.buf,
+            flags);
+    }
+    OE_TRACE_INFO("certificate signature verified");
     result = OE_OK;
-//done:
+done:
     return result;
 }
 
@@ -169,19 +182,19 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der,
     size_t report_size = 0;
     oe_report_t parsed_report = {0};
     int ret;    
-    mbedtls_x509_crt crt;
-    mbedtls_x509_crt_init(&crt);
+    mbedtls_x509_crt cert;
+    mbedtls_x509_crt_init(&cert);
 
     // create a mbedtls cert object from encoded cert data in DER format
-    ret = mbedtls_x509_crt_parse(&crt, cert_in_der, cert_in_der_len);
+    ret = mbedtls_x509_crt_parse(&cert, cert_in_der, cert_in_der_len);
     if (ret)
         OE_RAISE_MSG(OE_FAILURE, "ret = %d", ret);
 
     // validate the certificate signature
-    //result = verify_cert_signature(cert);
-    //OE_CHECK(result);
+    result = verify_cert_signature(&cert);
+    OE_CHECK(result);
 
-    OE_CHECK(extract_x509_report_extension(&crt, &report, &report_size));
+    OE_CHECK(extract_x509_report_extension(&cert, &report, &report_size));
 
     OE_TRACE_INFO("extract_x509_report_extension() succeeded");
     OE_TRACE_INFO("report = %p report[0]=0x%x report_size=%d", report, *report, report_size);
@@ -202,7 +215,7 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der,
         OE_RAISE_MSG(OE_VERIFY_FAILED, "Report type is not supported: parsed_report.type (%d)", parsed_report.type);
 
     // verify report's user data
-    result = verify_report_user_data(&crt, parsed_report.report_data);
+    result = verify_report_user_data(&cert, parsed_report.report_data);
     OE_CHECK(result);
 
     // callback to the caller to verity enclave identity
@@ -217,6 +230,6 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der,
         OE_TRACE_WARNING("No enclave_identity_callback provided in oe_verify_tls_cert call", NULL);
     }
 done:
-    mbedtls_x509_crt_free(&crt);
+    mbedtls_x509_crt_free(&cert);
     return result;
 }

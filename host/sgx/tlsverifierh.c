@@ -20,7 +20,8 @@
 // verify report data against peer certificate
 oe_result_t verify_report_user_data(uint8_t *key_buff, size_t key_buff_size, uint8_t*  report_data);
 oe_result_t get_public_key_from_cert(X509* cert, uint8_t *key_buff, size_t *key_size);
-oe_result_t verify_cert(X509 *cert);
+//oe_result_t verify_cert(X509 *cert);
+oe_result_t verify_cert_signature(X509* cert);
 
 static unsigned char oid_oe_report[] = {0x2A, 0x86, 0x48, 0x86, 0xF8, 0x4D, 0x8A, 0x39, 0x01};
 
@@ -88,27 +89,39 @@ done:
     return result;
 }
 
-oe_result_t verify_cert(X509 *cert)
+oe_result_t verify_cert_signature(X509 *cert)
 {
-    oe_result_t result=OE_VERIFY_FAILED;
-     int ret = 0;
-     X509_STORE *store = 0;
-     X509_STORE_CTX *ctx = 0;
+    (void)cert;
 
-     store = X509_STORE_new();
-     //X590_STORE_add_cert(store, cacert);
-     ctx = X509_STORE_CTX_new();
-     X509_STORE_CTX_init(ctx, store, cert, NULL);
+//     oe_result_t result = OE_VERIFY_FAILED;
+//     X509_STORE_CTX* ctx = NULL;
 
-     ret = X509_verify_cert(ctx);
-     if (ret != 1)
-     {
-        OE_TRACE_ERROR("X590_verify_cert failed", NULL);
-        goto done;
-     }
-     result = OE_OK;
-done:
-    return result;
+//     /* Create a context for verification */
+//     if (!(ctx = X509_STORE_CTX_new()))
+//         OE_RAISE(OE_FAILURE);
+
+//     /* Initialize the context that will be used to verify the certificate */
+//     if (!X509_STORE_CTX_init(ctx, NULL, NULL, NULL))
+//         OE_RAISE(OE_FAILURE);
+
+//     /* Inject the certificate into the verification context */
+//     X509_STORE_CTX_set_cert(ctx, cert);
+
+//     /* Set the CA chain into the verification context */
+//     //X509_STORE_CTX_trusted_stack(ctx, chain);
+
+//     /* Finally verify the certificate */
+//     if (!X509_verify_cert(ctx))
+//         OE_RAISE_MSG(OE_FAILURE, "certificate signature validation failed!");
+
+//     result = OE_OK;
+// done:
+//     if (ctx)
+//         X509_STORE_CTX_free(ctx);
+
+//     return result;
+
+return OE_OK;
 }
 
 oe_result_t verify_report_user_data(uint8_t *key_buff, size_t key_buff_size, uint8_t*  report_data)
@@ -186,6 +199,7 @@ done:
 
     return result;
 }
+
 oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der,
                                 size_t cert_in_der_len,
                                 oe_enclave_identity_verify_callback_t enclave_identity_callback,
@@ -210,9 +224,8 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der,
         OE_RAISE(result, "d2i_X509 failed err=[%s]", ERR_error_string(ERR_get_error(), NULL));
 
     // validate the certificate signature
-
-    //result = verify_cert(cert);
-    //OE_CHECK(result);
+    result = verify_cert_signature(cert);
+    OE_CHECK(result);
 
     //------------------------------------------------------------------------
     // Validate the report's trustworthiness
