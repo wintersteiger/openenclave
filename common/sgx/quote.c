@@ -177,9 +177,7 @@ oe_result_t VerifyQuoteImpl(
         &qe_cert_data));
 
     if (sgx_quote->version != OE_SGX_QUOTE_VERSION)
-    {
-        OE_RAISE(OE_VERIFY_FAILED);
-    }
+        OE_RAISE_MSG(OE_VERIFY_FAILED, "Unexpected quote version sgx_quote->version=%d", sgx_quote->version);
 
     // The certificate provided in the quote is preferred.
     if (qe_cert_data.type == OE_SGX_PCK_ID_PCK_CERT_CHAIN)
@@ -188,14 +186,15 @@ oe_result_t VerifyQuoteImpl(
             OE_RAISE(OE_FAILURE);
         pem_pck_certificate = qe_cert_data.data;
         pem_pck_certificate_size = qe_cert_data.size;
+        OE_TRACE_VERBOSE("\nPCK certificate chain: \n[%s]\n", pem_pck_certificate);
     }
     else
     {
-        OE_RAISE(OE_MISSING_CERTIFICATE_CHAIN);
+        OE_RAISE_MSG(OE_MISSING_CERTIFICATE_CHAIN, "qe_cert_data.type=%d", qe_cert_data.type);
     }
 
     if (pem_pck_certificate == NULL)
-        OE_RAISE(OE_MISSING_CERTIFICATE_CHAIN);
+        OE_RAISE_MSG(OE_MISSING_CERTIFICATE_CHAIN, "no cetificate found", NULL);
 
     // PckCertificate Chain validations.
     {
