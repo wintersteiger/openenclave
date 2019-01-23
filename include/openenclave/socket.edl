@@ -3,7 +3,7 @@
 enclave {
     include "openenclave/bits/sockettypes.h"
     include "openenclave/bits/timetypes.h"
-    
+
     struct accept_Result {
         oe_socket_error_t error;
         void* hNewSocket;
@@ -86,12 +86,12 @@ enclave {
     untrusted {
         accept_Result ocall_accept(
             [user_check] void* a_hSocket,
-            int a_nAddrLen);
+            size_t a_nAddrLen);
 
         oe_socket_error_t ocall_bind(
             [user_check] void* a_hSocket,
             [in, size=a_nNameLen] const void* a_Name,
-            int a_nNameLen);
+            size_t a_nNameLen);
 
         oe_socket_error_t ocall_closesocket(
             [user_check] void* a_hSocket);
@@ -99,7 +99,7 @@ enclave {
         oe_socket_error_t ocall_connect(
             [user_check] void* a_hSocket,
             [in, size=a_nNameLen] const void* a_Name,
-            int a_nNameLen);
+            size_t a_nNameLen);
 
         getaddrinfo_Result ocall_getaddrinfo(
             [in, string] const char* a_NodeName,
@@ -113,22 +113,22 @@ enclave {
 
         getnameinfo_Result ocall_getnameinfo(
             [in, size=a_AddrLen] const void* a_Addr,
-            int a_AddrLen,
+            size_t a_AddrLen,
             int a_Flags);
 
         GetSockName_Result ocall_getpeername(
             [user_check] void* a_hSocket,
-            int a_nNameLen);
+            size_t a_nNameLen);
 
         GetSockName_Result ocall_getsockname(
             [user_check] void* a_hSocket,
-            int a_nNameLen);
+            size_t a_nNameLen);
 
         getsockopt_Result ocall_getsockopt(
             [user_check] void* a_hSocket,
             int a_nLevel,
             int a_nOptName,
-            int a_nOptLen);
+            size_t a_nOptLen);
 
         ioctlsocket_Result ocall_ioctlsocket(
             [user_check] void* a_hSocket,
@@ -152,7 +152,7 @@ enclave {
             size_t len,
             int flags,
             [in, size=a_AddrLen] const void* src_addr,
-            int a_AddrLen,
+            size_t a_AddrLen,
             [out] oe_socket_error_t* error);
 
         select_Result ocall_select(
@@ -173,7 +173,7 @@ enclave {
             int a_nLevel,
             int a_nOptName,
             [in, size=a_nOptLen] const void* a_OptVal,
-            int a_nOptLen);
+            size_t a_nOptLen);
 
         oe_socket_error_t ocall_shutdown(
             [user_check] void* a_hSocket,
