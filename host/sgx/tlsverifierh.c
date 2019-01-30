@@ -15,8 +15,8 @@
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 
-// TODO: move this to shared library
 // verify report data against peer certificate
 oe_result_t verify_report_user_data(uint8_t *key_buff, size_t key_buff_size, uint8_t*  report_data);
 oe_result_t get_public_key_from_cert(X509* cert, uint8_t *key_buff, size_t *key_size);
@@ -25,9 +25,22 @@ oe_result_t verify_cert_signature(X509* cert);
 
 static unsigned char oid_oe_report[] = {0x2A, 0x86, 0x48, 0x86, 0xF8, 0x4D, 0x8A, 0x39, 0x01};
 
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+/* Needed because some versions of OpenSSL do not support X509_up_ref() */
+static const STACK_OF(X509_EXTENSION) * X509_get0_extensions(const X509* x)
+{
+    if (!x->cert_info)
+    {
+        return NULL;
+    }
+    return x->cert_info->extensions;
+}
+
+#endif
+
+
 // Extract extensions from X509 and decode base64
-// Given an X509 extension OID, return its data
-// https://zakird.com/2013/10/13/certificate-parsing-with-openssl
 static oe_result_t get_extension
 (
     const X509* crt,            /* in */
@@ -38,33 +51,55 @@ static oe_result_t get_extension
 )
 {
     oe_result_t result = OE_NOT_FOUND;
-    STACK_OF(X509_EXTENSION) *exts = crt->cert_info->extensions;
-    X509_EXTENSION *ex = NULL;
-    ASN1_OBJECT *obj = NULL;
+    const STACK_OF(X509_EXTENSION) *exts = NULL;
     int extension_count = 0;
+    int bytes_count = 0;
 
+    exts = X509_get0_extensions(crt);
     if (exts == NULL)
         OE_RAISE(OE_INVALID_PARAMETER);
 
     extension_count = sk_X509_EXTENSION_num(exts);
     for (int i=0; i < extension_count; i++) {
+        X509_EXTENSION *ex = NULL;
+        char buff[128];
+
         ex = sk_X509_EXTENSION_value(exts, i);
         if (ex == NULL)
         {
             goto done;
         }
-        obj = X509_EXTENSION_get_object(ex);
-        if (obj == NULL)
+
+        bytes_count = i2t_ASN1_OBJECT(buff, sizeof(buff), X509_EXTENSION_get_object(ex));
+        if ((bytes_count == 0) && (oid_len != bytes_count))
         {
+            OE_TRACE_ERROR("Unexpected bytes_count (%d) oid_len = %d", bytes_count, oid_len);
             goto done;
         }
-        if (oid_len != obj->length) continue;
-        
-        if (0 == memcmp(obj->data, oid, (size_t)(obj->length))) {
-            *data = (uint8_t *)(ex->value->data);
-            *data_len = (size_t)(ex->value->length);
-            result = OE_OK;
-            break;
+
+        /* If found matching oid then get the data */
+        if (memcmp(buff, oid, (size_t)bytes_count) == 0)
+        {
+            ASN1_OCTET_STRING* str;
+
+            /* Get the data from the extension */
+            if (!(str = X509_EXTENSION_get_data(ex)))
+                OE_RAISE(OE_FAILURE);
+
+            /* If the caller's buffer is too small, raise error */
+            if ((size_t)str->length > *data_len)
+            {
+                *data_len = (size_t)str->length;
+                OE_RAISE(OE_BUFFER_TOO_SMALL);
+            }
+
+            if (data)
+            {
+                *data = (uint8_t *)(str->data);
+                *data_len = (size_t)str->length;
+                result = OE_OK;
+                goto done;
+            }
         }
     }
 done:
@@ -79,6 +114,7 @@ static oe_result_t extract_x509_report_extension
 )
 {   
     oe_result_t result = OE_FAILURE;
+
     result = get_extension(crt, oid_oe_report, sizeof(oid_oe_report), ext_data, ext_data_size);
     OE_CHECK(result);
 
@@ -163,7 +199,7 @@ oe_result_t get_public_key_from_cert(X509* cert, uint8_t *key_buff, size_t *key_
     * ---------------------------------------------------------- */
     // display the key type and size  in PEM format
     if (pkey) {
-        switch (pkey->type) {
+        switch (EVP_PKEY_id(pkey)) {
         case EVP_PKEY_RSA:
             OE_TRACE_INFO("%d bit RSA Key\n\n", EVP_PKEY_bits(pkey));
             break;
@@ -222,6 +258,7 @@ oe_result_t oe_verify_tls_cert( uint8_t* cert_in_der,
     cert = d2i_X509(NULL, &p, (uint32_t)cert_in_der_len);
     if (cert == NULL)
         OE_RAISE(result, "d2i_X509 failed err=[%s]", ERR_error_string(ERR_get_error(), NULL));
+
 
     // validate the certificate signature
     result = verify_cert_signature(cert);
