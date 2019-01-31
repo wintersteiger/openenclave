@@ -244,6 +244,10 @@ oe_result_t oe_enforce_revocation(
             r, "oe_cer_verify failed with error = %s\n", cert_verify_error.buf);
     }
 
+    // Validate the tcbinfo status of a given platform:
+    // A platform's PCK contains tcbinfo for the platform matching the PCK
+    // We use this platform's tcbinfo to compare against all the tcbinfo levels returned
+    // from the oe_get_revocation_info call
     for (uint32_t i = 0; i < OE_COUNTOF(platform_tcb_level.sgx_tcb_comp_svn);
          ++i)
     {
@@ -253,6 +257,7 @@ oe_result_t oe_enforce_revocation(
     platform_tcb_level.pce_svn = parsed_extension_info.pce_svn;
     platform_tcb_level.status = OE_TCB_LEVEL_STATUS_UNKNOWN;
 
+    // The checking of whether a platform's tcbinfo is up-to-date was done inside the following routine
     OE_CHECK(oe_parse_tcb_info_json(
         revocation_args.tcb_info,
         revocation_args.tcb_info_size,
