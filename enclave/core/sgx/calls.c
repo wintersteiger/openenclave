@@ -46,6 +46,16 @@ uint8_t __oe_initialized = 0;
 
 extern bool oe_disable_debug_malloc_check;
 
+// Quick fix to allow SGX-LKL to partition the heap
+// TODO: Add an official mechanism for clients to reserve heap memory.
+#if defined(OE_HEAP_ALLOTTED_PAGE_COUNT)
+#define OE_HEAP_ALLOTTED_SIZE (OE_HEAP_ALLOTTED_PAGE_COUNT * OE_PAGE_SIZE)
+#define OE_HEAP_END_ADDRESS \
+    ((unsigned char*)__oe_get_heap_base() + OE_HEAP_ALLOTTED_SIZE)
+#else
+#define OE_HEAP_END_ADDRESS ((unsigned char*)__oe_get_heap_end())
+#endif /* defined (OE_HEAP_ALLOTTED_PAGE_COUNT) */
+
 /*
 **==============================================================================
 **
@@ -217,7 +227,7 @@ static oe_result_t _handle_init_enclave(uint64_t arg_in)
 
             /* Initialize the allocator */
             oe_allocator_init(
-                (void*)__oe_get_heap_base(), (void*)__oe_get_heap_end());
+                (void*)__oe_get_heap_base(), (void*)OE_HEAP_END_ADDRESS);
 
             /* Call global constructors. Now they can safely use simulated
              * instructions like CPUID. */
@@ -687,6 +697,7 @@ oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)
     oe_result_t result = OE_UNEXPECTED;
     oe_sgx_td_t* td = oe_sgx_get_td();
     Callsite* callsite = td->callsites;
+    uint64_t saved_fs = 0;
 
     /* If the enclave is in crashing/crashed status, new OCALL should fail
     immediately. */
@@ -701,6 +712,18 @@ oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)
     if (!td_initialized(td))
         OE_RAISE_NO_TRACE(OE_FAILURE);
 
+    /* If application has changed %fs register, save it before making an ocall.
+     * OE ensures that %fs and %gs are equal upon EENTER, so we'll assume if
+     * they are different that they need to be saved. */
+    uint64_t tmp_fs;
+    uint64_t tmp_gs;
+    asm("mov %%fs:0, %0" : "=r"(tmp_fs));
+    asm("mov %%gs:0, %0" : "=r"(tmp_gs));
+    if (tmp_fs != tmp_gs)
+    {
+        saved_fs = tmp_fs;
+    }
+
     /* Save call site where execution will resume after OCALL */
     if (oe_setjmp(&callsite->jmpbuf) == 0)
     {
@@ -712,12 +735,24 @@ oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)
     }
     else
     {
+        /* ORET here */
         OE_CHECK_NO_TRACE(result = (oe_result_t)td->oret_result);
 
         if (arg_out)
             *arg_out = td->oret_arg;
 
-        /* ORET here */
+        /* If %fs was saved prior to OCall, restore it. Assume that if %fs
+         * was changed previously, then the wrfsbase instruction is available.
+         * Even if it isn't, OE will emulate it in the exception handler. In
+         * simulation mode, just use a host function supplied in the ecall
+         * context. */
+        if (saved_fs)
+        {
+            if (td->host_ecall_context->set_fsbase)
+                td->host_ecall_context->set_fsbase((void*)saved_fs);
+            else
+                asm volatile("wrfsbase %0" ::"r"(saved_fs));
+        }
     }
 
     result = OE_OK;
