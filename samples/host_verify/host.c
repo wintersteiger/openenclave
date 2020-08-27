@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 
 #include <errno.h>
+#include <openenclave/attestation/sgx/eeid_verifier.h>
+#include <openenclave/attestation/verifier.h>
 #include <openenclave/host_verify.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -130,6 +132,55 @@ oe_result_t verify_report(
     return result;
 }
 
+oe_result_t verify_evidence(
+    const char* evidence_filename,
+    const char* endorsements_filename)
+{
+    oe_result_t result = OE_FAILURE;
+    uint8_t *evidence = NULL, *endorsements = NULL;
+    size_t evidence_size = 0, endorsements_size = 0;
+
+    if (read_binary_file(evidence_filename, &evidence, &evidence_size))
+    {
+        if (endorsements_filename &&
+            !read_binary_file(
+                endorsements_filename, &endorsements, &endorsements_size))
+            return OE_INVALID_PARAMETER;
+
+        const oe_policy_t* policies = NULL;
+        size_t policies_size = 0;
+        oe_claim_t* claims = NULL;
+        size_t claims_length = 0;
+
+        oe_verifier_initialize();
+#ifdef OE_WITH_EXPERIMENTAL_EEID
+        oe_sgx_eeid_verifier_initialize();
+#endif
+
+        result = oe_verify_evidence(
+            NULL,
+            evidence,
+            evidence_size,
+            endorsements,
+            endorsements_size,
+            policies,
+            policies_size,
+            &claims,
+            &claims_length);
+
+        oe_free_claims(claims, claims_length);
+        free(evidence);
+        free(endorsements);
+
+        oe_verifier_shutdown();
+#ifdef OE_WITH_EXPERIMENTAL_EEID
+        oe_sgx_eeid_verifier_shutdown();
+#endif
+    }
+
+    return result;
+}
+
 oe_result_t enclave_identity_verifier(oe_identity_t* identity, void* arg)
 {
     (void)arg;
@@ -177,8 +228,8 @@ void print_syntax(const char* program_name)
 {
     fprintf(
         stdout,
-        "Usage:\n  %s -r <report_file> [-e <endorsement_file>]\n  %s -c "
-        "<certificate_file>\n",
+        "Usage:\n  %s -r <report_file> -v <evidence_file> "
+        "[-e <endorsement_file>]\n  %s -c <certificate_file>\n",
         program_name,
         program_name);
     fprintf(
@@ -195,6 +246,7 @@ void print_syntax(const char* program_name)
 int main(int argc, const char* argv[])
 {
     const char* report_filename = NULL;
+    const char* evidence_filename = NULL;
     const char* endorsement_filename = NULL;
     const char* certificate_filename = NULL;
     oe_result_t result = OE_FAILURE;
@@ -219,6 +271,11 @@ int main(int argc, const char* argv[])
             if (argc > (n - 1))
                 report_filename = argv[++n];
         }
+        if (memcmp(argv[n], "-v", 2) == 0)
+        {
+            if (argc > (n - 1))
+                evidence_filename = argv[++n];
+        }
         else if (memcmp(argv[n], "-e", 2) == 0)
         {
             if (argc > (n - 1))
@@ -236,7 +293,8 @@ int main(int argc, const char* argv[])
         }
     }
 
-    if (report_filename == NULL && certificate_filename == NULL)
+    if (report_filename == NULL && certificate_filename == NULL &&
+        evidence_filename == NULL)
     {
         print_syntax(argv[0]);
         return 1;
@@ -250,6 +308,17 @@ int main(int argc, const char* argv[])
             fprintf(
                 stdout,
                 "Report verification %s (%u).\n\n",
+                (result == OE_OK) ? "succeeded" : "failed",
+                result);
+        }
+
+        if (evidence_filename != NULL)
+        {
+            fprintf(stdout, "Verifying evidence %s...\n", evidence_filename);
+            result = verify_evidence(evidence_filename, endorsement_filename);
+            fprintf(
+                stdout,
+                "Evicence verification %s (%u).\n\n",
                 (result == OE_OK) ? "succeeded" : "failed",
                 result);
         }

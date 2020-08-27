@@ -61,3 +61,9 @@ if (NOT BUILD_HOSTVERIFY_INLINE)
 else ()
   target_link_libraries(host_verify oehostverify)
 endif ()
+
+if (WITH_EEID)
+  target_compile_definitions(host_verify PRIVATE OE_WITH_EXPERIMENTAL_EEID)
+  # need oehost for verify_report_internal and oe_memalign
+  target_link_libraries(host_verify oehost)
+endif ()
