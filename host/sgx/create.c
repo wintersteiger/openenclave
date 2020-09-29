@@ -620,6 +620,7 @@ static oe_result_t _add_eeid_marker_page(
         oe_sha256_save(hctx, eeid->hash_state.H, eeid->hash_state.N);
         eeid->entry_point = entry_point;
         eeid->vaddr = *vaddr;
+        eeid->num_tls_pages = context->num_tls_pages;
         eeid->signature_size = sizeof(sgx_sigstruct_t);
         memcpy(
             eeid->data + eeid->data_size,

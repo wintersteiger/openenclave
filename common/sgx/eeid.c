@@ -120,7 +120,7 @@ oe_result_t oe_remeasure_memory_pages(
         tcs->cssa = 0;
         tcs->nssa = 2;
         tcs->oentry = eeid->entry_point;
-        tcs->fsbase = vaddr + (5 * OE_PAGE_SIZE);
+        tcs->fsbase = vaddr + (eeid->num_tls_pages + 4) * OE_PAGE_SIZE;
         tcs->gsbase = tcs->fsbase;
         tcs->fslimit = 0xFFFFFFFF;
         tcs->gslimit = 0xFFFFFFFF;
