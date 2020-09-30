@@ -508,7 +508,8 @@ size_t oe_eeid_byte_size(const oe_eeid_t* eeid)
     return sizeof(eeid->version) + sizeof(eeid->hash_state) +
            sizeof(eeid->signature_size) + sizeof(eeid->size_settings) +
            sizeof(eeid->vaddr) + sizeof(eeid->entry_point) +
-           sizeof(eeid->data_size) + eeid->data_size + eeid->signature_size;
+           sizeof(eeid->num_tls_pages) + sizeof(eeid->data_size) +
+           eeid->data_size + eeid->signature_size;
 }
 
 oe_result_t oe_eeid_hton(
@@ -542,6 +543,7 @@ oe_result_t oe_eeid_hton(
 
     OE_CHECK(_hton_uint64_t(eeid->vaddr, &position, &remaining));
     OE_CHECK(_hton_uint64_t(eeid->entry_point, &position, &remaining));
+    OE_CHECK(_hton_uint64_t(eeid->num_tls_pages, &position, &remaining));
 
     OE_CHECK(_hton_uint64_t(eeid->data_size, &position, &remaining));
     OE_CHECK(_hton_buffer(
@@ -588,6 +590,7 @@ oe_result_t oe_eeid_ntoh(
 
     OE_CHECK(_ntoh_uint64_t(&position, &remaining, &eeid->vaddr));
     OE_CHECK(_ntoh_uint64_t(&position, &remaining, &eeid->entry_point));
+    OE_CHECK(_ntoh_uint64_t(&position, &remaining, &eeid->num_tls_pages));
 
     OE_CHECK(_ntoh_uint64_t(&position, &remaining, &eeid->data_size));
     OE_CHECK(_ntoh_buffer(
