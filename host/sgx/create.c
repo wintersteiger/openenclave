@@ -314,13 +314,13 @@ static oe_result_t _calculate_enclave_size(
 
     if (image->elf.tdata_size)
     {
-        tls_size +=
-            oe_round_up_to_multiple(image->elf.tdata_size, image->elf.tdata_align);
+        tls_size += oe_round_up_to_multiple(
+            image->elf.tdata_size, image->elf.tdata_align);
     }
     if (image->elf.tbss_size)
     {
-        tls_size +=
-            oe_round_up_to_multiple(image->elf.tbss_size, image->elf.tbss_align);
+        tls_size += oe_round_up_to_multiple(
+            image->elf.tbss_size, image->elf.tbss_align);
     }
 
     tls_size = oe_round_up_to_multiple(tls_size, OE_PAGE_SIZE);
@@ -635,7 +635,8 @@ static oe_result_t _add_eeid_marker_page(
          * commit size of the base image and dynamically configured data
          * pages (stacks + heap) excluding the EEID data size.
          */
-        _calculate_enclave_size(image, image_size, props, &marker->offset, NULL);
+        _calculate_enclave_size(
+            image, image_size, props, &marker->offset, NULL);
 
         uint64_t addr = enclave->addr + *vaddr;
         uint64_t src = (uint64_t)page;
@@ -821,7 +822,11 @@ oe_result_t oe_sgx_build_enclave(
 
     /* Calculate the size of this enclave in memory */
     OE_CHECK(_calculate_enclave_size(
-        &oeimage, image_size, &props, &loaded_enclave_pages_size, &enclave_size));
+        &oeimage,
+        image_size,
+        &props,
+        &loaded_enclave_pages_size,
+        &enclave_size));
 
     /* Perform the ECREATE operation */
     OE_CHECK(oe_sgx_create_enclave(
@@ -839,7 +844,13 @@ oe_result_t oe_sgx_build_enclave(
 
 #ifdef OE_WITH_EXPERIMENTAL_EEID
     OE_CHECK(_add_eeid_marker_page(
-        &oeimage, context, enclave, image_size, oeimage.elf.entry_rva, &props, &vaddr));
+        &oeimage,
+        context,
+        enclave,
+        image_size,
+        oeimage.elf.entry_rva,
+        &props,
+        &vaddr));
 #endif
 
     /* Add data pages */
